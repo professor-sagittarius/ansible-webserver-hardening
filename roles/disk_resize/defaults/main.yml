@@ -1,0 +1,6 @@
+disk_device: "/dev/sda"
+partition_number: 1
+
+# Set to true to reboot after partition resize (recommended for changes to take full effect)
+# Set to false to skip reboot (manual reboot may be required later)
+disk_resize_reboot: false

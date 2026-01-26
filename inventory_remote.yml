@@ -1,0 +1,24 @@
+# Inventory for remote host deployment
+# Usage: ansible-playbook -i inventory_remote.yml playbook_remote.yml
+
+all:
+  vars:
+    ansible_user: root
+
+    # SSH hardening (set to 'yes'/true for initial setup, 'no'/false for hardened)
+    ssh_permit_root_login: 'no'
+    ssh_password_authentication: false
+
+  hosts:
+    # Add your remote hosts here
+    # Example:
+    # server-01:
+    #   ansible_host: 192.168.1.101
+    #   change_hostname: true
+    #   vm_hostname: "docker-host-01"
+    #   resize_disk: true
+    #   users_user_list:
+    #     - name: admin
+    #       groups: sudo,docker
+    #       authorized_keys:
+    #         - "ssh-ed25519 AAAAC3..."

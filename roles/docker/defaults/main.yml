@@ -1,0 +1,30 @@
+# geerlingguy.docker role variables
+docker_edition: 'ce'
+docker_packages_state: present
+docker_service_manage: true
+docker_service_state: started
+docker_service_enabled: true
+docker_install_compose_plugin: true
+docker_compose_package_state: present
+docker_users: []
+
+# Python Docker library (required for docker_compose_v2)
+install_docker_python: true
+
+# Portainer settings
+install_portainer: false
+portainer_http_port: 8000
+portainer_https_port: 9443
+portainer_data_dir: "/opt/portainer"
+
+# Dockge settings
+install_dockge: false
+dockge_port: 5001
+dockge_install_dir: "/opt/dockge"
+dockge_stacks_dir: "/opt/stacks"
+
+# Docker-compatible sysctl settings for os-hardening
+# Required to prevent os-hardening from breaking Docker networking
+docker_sysctl_overwrite:
+  net.ipv4.ip_forward: 1
+  net.ipv6.conf.all.forwarding: 1

@@ -1,0 +1,43 @@
+# Ansible vault password files
+.vault_pass
+.vault_password
+*.vault_pass
+vault_password_file
+
+# Retry files
+*.retry
+
+# Swap files
+*.swp
+*.swo
+*~
+
+# IDE files
+.idea/
+.vscode/
+*.code-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+venv/
+.env
+
+# Sensitive files
+*.pem
+*.key
+credentials*
+secrets*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Ansible Galaxy downloaded roles (optional - uncomment to ignore)
+# roles/geerlingguy.*/
+# roles/robertdebock.*/
+# roles/devsec.*/
+
+# Logs
+*.log

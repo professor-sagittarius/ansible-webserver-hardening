@@ -1,0 +1,222 @@
+# All Variables Reference
+# This file documents all configurable variables for all roles in this project.
+# Copy the variables you need to your inventory file.
+#
+# Playbooks:
+#   - playbook_localhost.yml: For localhost deployment
+#   - playbook_remote.yml: For remote host deployment
+#
+# Both playbooks install all components (hardened) with Portainer enabled.
+
+---
+
+# =============================================================================
+# SSH Role (local)
+# =============================================================================
+# Installs OpenSSH server. SSH hardening is handled by devsec.hardening.ssh_hardening.
+
+# No configurable variables - this role only installs SSH and generates host keys.
+
+
+# =============================================================================
+# robertdebock.users (external)
+# =============================================================================
+# Manages users and groups on the system.
+# Full documentation: https://github.com/robertdebock/ansible-role-users
+#
+# Note: sudo group is created by sudo package, docker group by docker installation.
+# Use users_group_list only for custom groups.
+
+users_group_list: []                        # Custom groups to create
+# Example:
+# users_group_list:
+#   - name: developers
+#     gid: 1100
+
+users_user_list: []                         # Users to create/manage
+# Example:
+# users_user_list:
+#   - name: admin
+#     comment: "Admin User"
+#     uid: 1001
+#     group: admin                          # Primary group
+#     groups: sudo,docker                   # Additional groups
+#     password: "{{ 'password' | password_hash('sha512') }}"
+#     sudo_options: "ALL=(ALL) NOPASSWD: ALL"
+#     authorized_keys:
+#       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."
+#     expires: -1                           # -1 = never expires
+#
+#   - name: olduser
+#     state: absent                         # Remove user
+
+
+# =============================================================================
+# Docker Role (local, wraps geerlingguy.docker)
+# =============================================================================
+# Installs Docker, Docker Compose, and Portainer.
+
+# geerlingguy.docker role variables
+docker_edition: 'ce'                        # Docker edition: 'ce' or 'ee'
+docker_packages_state: present              # Package state: present, latest, absent
+docker_service_manage: true                 # Whether to manage the Docker service
+docker_service_state: started               # Service state: started, stopped
+docker_service_enabled: true                # Enable Docker on boot
+docker_install_compose_plugin: true         # Install Docker Compose plugin
+docker_compose_package_state: present       # Compose package state
+docker_users: []                            # Managed by robertdebock.users instead
+
+# Python Docker library (required for docker_compose_v2 module)
+install_docker_python: true
+
+# Portainer (container management UI) - enabled by default
+install_portainer: true
+portainer_http_port: 8000                   # Portainer HTTP port
+portainer_https_port: 9443                  # Portainer HTTPS port
+portainer_data_dir: "/opt/portainer"        # Portainer data directory
+
+# Dockge (alternative container management UI) - disabled by default
+install_dockge: false
+dockge_port: 5001                           # Dockge web UI port
+dockge_install_dir: "/opt/dockge"           # Dockge installation directory
+dockge_stacks_dir: "/opt/stacks"            # Dockge stacks directory
+
+
+# =============================================================================
+# Disk Resize Role (local)
+# =============================================================================
+# Expands partition and filesystem to use all available disk space.
+
+# Enable disk resize
+resize_disk: false
+
+disk_device: "/dev/sda"                     # Device to resize (e.g., /dev/sda, /dev/vda)
+partition_number: 1                         # Partition number (e.g., 1 for /dev/sda1)
+disk_resize_reboot: false                   # Reboot after resize (recommended: true)
+
+
+# =============================================================================
+# Guest Agent Role (local)
+# =============================================================================
+# Installs QEMU guest agent for Proxmox/KVM VMs.
+# Always installed - no configurable variables.
+
+
+# =============================================================================
+# Hostname Role (local)
+# =============================================================================
+# Sets the system hostname.
+
+# Enable hostname change
+change_hostname: false
+
+vm_hostname: "debian-vm"                    # Hostname to set
+
+
+# =============================================================================
+# Network Role (local)
+# =============================================================================
+# Configures static IP with netplan.
+
+# Enable static IP configuration
+configure_static_ip: false
+
+network_interface: "ens18"                  # Interface name (e.g., eth0, ens18, enp0s3)
+static_ip: ""                               # Static IP with CIDR (e.g., 192.168.1.100/24)
+gateway_ip: ""                              # Gateway IP (e.g., 192.168.1.1)
+dns_servers: []                             # List of DNS servers
+# Example:
+# dns_servers:
+#   - "8.8.8.8"
+#   - "8.8.4.4"
+
+
+# =============================================================================
+# SSH Preflight Role (local)
+# =============================================================================
+# Pre-flight checks to prevent SSH lockout during hardening.
+# Uses ssh_permit_root_login and ssh_password_authentication variables.
+
+
+# =============================================================================
+# devsec.hardening.ssh_hardening (external)
+# =============================================================================
+# SSH server security hardening from DevSec Hardening Framework.
+# Full documentation: https://github.com/dev-sec/ansible-collection-hardening
+
+ssh_permit_root_login: 'no'                 # Permit root SSH login
+                                            # Values: 'yes', 'no', 'prohibit-password', 'forced-commands-only'
+ssh_password_authentication: false          # Allow password authentication (true/false)
+sftp_enabled: true                          # Enable SFTP subsystem (required for Ansible)
+ssh_server_ports: ['22']                    # SSH listening ports
+ssh_max_auth_retries: 3                     # Maximum authentication attempts
+
+
+# =============================================================================
+# devsec.hardening.os_hardening (external)
+# =============================================================================
+# OS-level security hardening from DevSec Hardening Framework.
+# Full documentation: https://github.com/dev-sec/ansible-collection-hardening
+
+# Sysctl overrides (set in playbook for Docker compatibility)
+# sysctl_overwrite:
+#   net.ipv4.ip_forward: 1
+#   net.ipv6.conf.all.forwarding: 1
+
+
+# =============================================================================
+# geerlingguy.firewall (external)
+# =============================================================================
+# iptables-based firewall management.
+# Full documentation: https://github.com/geerlingguy/ansible-role-firewall
+
+# Firewall ports are set in playbook. To add custom ports, override in inventory:
+# firewall_allowed_tcp_ports:
+#   - "22"
+#   - "80"
+#   - "443"
+#   - "8000"   # Portainer HTTP
+#   - "9443"   # Portainer HTTPS
+#   - "3000"   # Custom app
+
+firewall_allowed_udp_ports: []              # UDP ports to allow
+firewall_flush_rules_and_chains: false      # Preserve Docker iptables rules (keep false!)
+firewall_log_dropped_packets: true          # Log dropped packets
+
+
+# =============================================================================
+# robertdebock.fail2ban (external)
+# =============================================================================
+# Intrusion prevention (brute-force protection).
+# Full documentation: https://github.com/robertdebock/ansible-role-fail2ban
+
+fail2ban_bantime: 3600                      # Ban duration in seconds (1 hour)
+fail2ban_findtime: 600                      # Time window for counting failures (10 minutes)
+fail2ban_maxretry: 5                        # Failed attempts before ban
+fail2ban_ignoreips: "127.0.0.1/8 ::1"       # IPs to never ban
+# Example with local network:
+# fail2ban_ignoreips: "127.0.0.1/8 ::1 {{ ansible_default_ipv4.network | default('') }}/24"
+
+fail2ban_jail_configuration:                # Jail configuration
+  - option: enabled
+    value: "true"
+    section: sshd                           # Enable SSH jail
+
+
+# =============================================================================
+# geerlingguy.clamav (external)
+# =============================================================================
+# ClamAV antivirus scanning engine.
+# Full documentation: https://github.com/geerlingguy/ansible-role-clamav
+
+clamav_daemon_state: started                # ClamAV daemon state
+clamav_daemon_enabled: true                 # Enable ClamAV on boot
+
+
+# =============================================================================
+# robertdebock.cron (external)
+# =============================================================================
+# Cron daemon management.
+# Full documentation: https://github.com/robertdebock/ansible-role-cron
+
+# No commonly customized variables - installs and enables cron service.

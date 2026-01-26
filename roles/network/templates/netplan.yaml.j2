@@ -1,0 +1,16 @@
+
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ network_interface }}:
+      dhcp4: no
+      addresses: [{{ static_ip }}]
+      routes:
+        - to: default
+          via: {{ gateway_ip }}
+      nameservers:
+        addresses: {{ dns_servers | to_json }}
+        search: []
+
+---

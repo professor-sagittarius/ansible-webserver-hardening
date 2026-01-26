@@ -1,0 +1,12 @@
+galaxy_info:
+  author: Your Name
+  description: Pre-flight checks to prevent SSH lockout during hardening
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+
+dependencies: []

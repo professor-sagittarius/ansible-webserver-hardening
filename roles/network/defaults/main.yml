@@ -1,0 +1,6 @@
+
+network_interface: "ens18"
+static_ip: ""
+gateway_ip: ""
+dns_servers: []
+

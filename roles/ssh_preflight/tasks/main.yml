@@ -1,0 +1,97 @@
+# Pre-flight checks to prevent SSH lockout
+# Validates that at least one sudo user with SSH keys exists before hardening
+
+- name: Get list of users in sudo group
+  ansible.builtin.getent:
+    database: group
+    key: sudo
+  register: sudo_group
+
+- name: Parse sudo group members
+  ansible.builtin.set_fact:
+    sudo_users: "{{ sudo_group.ansible_facts.getent_group.sudo[2].split(',') | select() | list }}"
+
+- name: Check for authorized_keys files for sudo users
+  ansible.builtin.stat:
+    path: "/home/{{ item }}/.ssh/authorized_keys"
+  loop: "{{ sudo_users }}"
+  register: auth_keys_check
+  when: sudo_users | length > 0
+
+- name: Build list of sudo users with SSH keys
+  ansible.builtin.set_fact:
+    sudo_users_with_keys: >-
+      {{ auth_keys_check.results | default([])
+         | selectattr('stat', 'defined')
+         | selectattr('stat.exists', 'equalto', true)
+         | selectattr('stat.size', 'greaterthan', 0)
+         | map(attribute='item') | list }}
+  when: sudo_users | length > 0
+
+- name: Set empty list if no sudo users
+  ansible.builtin.set_fact:
+    sudo_users_with_keys: []
+  when: sudo_users | length == 0
+
+- name: Check if root has authorized_keys
+  ansible.builtin.stat:
+    path: /root/.ssh/authorized_keys
+  register: root_auth_keys
+
+- name: Determine if system is safe to harden
+  ansible.builtin.set_fact:
+    has_sudo_user_with_keys: "{{ sudo_users_with_keys | length > 0 }}"
+    has_root_keys: "{{ root_auth_keys.stat.exists | default(false) and root_auth_keys.stat.size | default(0) > 0 }}"
+
+- name: Calculate safe hardening configuration
+  ansible.builtin.set_fact:
+    safe_to_disable_root: "{{ has_sudo_user_with_keys }}"
+    safe_to_disable_passwords: "{{ has_sudo_user_with_keys or has_root_keys }}"
+
+- name: Display SSH access status
+  ansible.builtin.debug:
+    msg: |
+      SSH Lockout Prevention Check:
+        Sudo users found: {{ sudo_users | default([]) | join(', ') | default('none') }}
+        Sudo users with SSH keys: {{ sudo_users_with_keys | join(', ') | default('none') }}
+        Root has SSH keys: {{ has_root_keys }}
+        Safe to disable root login: {{ safe_to_disable_root }}
+        Safe to disable password auth: {{ safe_to_disable_passwords }}
+
+- name: FAIL - Cannot disable root login without sudo user with SSH keys
+  ansible.builtin.fail:
+    msg: |
+      LOCKOUT PREVENTION: Cannot disable root login!
+
+      No sudo user with SSH authorized_keys found.
+      Either:
+        1. Create a user with sudo access and SSH keys first
+        2. Set ssh_permit_root_login: 'yes' in inventory
+
+      Sudo users found: {{ sudo_users | default([]) | join(', ') | default('none') }}
+  when:
+    - ssh_permit_root_login | default('no') == 'no'
+    - not safe_to_disable_root
+
+- name: FAIL - Cannot disable password auth without any SSH keys
+  ansible.builtin.fail:
+    msg: |
+      LOCKOUT PREVENTION: Cannot disable password authentication!
+
+      No SSH authorized_keys found for any user (including root).
+      Either:
+        1. Add SSH keys for a user first
+        2. Set ssh_password_authentication: true in inventory
+  when:
+    - not ssh_password_authentication | default(false)
+    - not safe_to_disable_passwords
+
+- name: WARN - Running with root login enabled (less secure)
+  ansible.builtin.debug:
+    msg: "WARNING: Root login is enabled. Consider creating a sudo user with SSH keys and disabling root login."
+  when: ssh_permit_root_login | default('no') == 'yes'
+
+- name: WARN - Running with password auth enabled (less secure)
+  ansible.builtin.debug:
+    msg: "WARNING: Password authentication is enabled. Consider adding SSH keys and disabling password auth."
+  when: ssh_password_authentication | default(false)

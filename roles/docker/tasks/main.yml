@@ -1,0 +1,66 @@
+# Install Docker using geerlingguy.docker role
+- name: Install Docker
+  ansible.builtin.include_role:
+    name: geerlingguy.docker
+
+# Install Python Docker library for docker_compose_v2 module
+- name: Install pip for Docker Python library
+  ansible.builtin.apt:
+    name:
+      - python3-pip
+      - python3-full
+    state: present
+    cache_valid_time: 3600
+  when: install_docker_python | bool
+
+- name: Install Docker Python library
+  ansible.builtin.pip:
+    name: docker
+    state: present
+    break_system_packages: true
+  when: install_docker_python | bool
+
+# Portainer deployment
+- name: Create Portainer directory
+  ansible.builtin.file:
+    path: "{{ portainer_data_dir }}"
+    state: directory
+    mode: '0755'
+  when: install_portainer | bool
+
+- name: Template Portainer compose file
+  ansible.builtin.template:
+    src: portainer-compose.yml.j2
+    dest: "{{ portainer_data_dir }}/compose.yml"
+    mode: '0644'
+  when: install_portainer | bool
+
+- name: Deploy Portainer
+  community.docker.docker_compose_v2:
+    project_src: "{{ portainer_data_dir }}"
+    state: present
+  when: install_portainer | bool
+
+# Dockge deployment
+- name: Create Dockge directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ dockge_install_dir }}"
+    - "{{ dockge_stacks_dir }}"
+  when: install_dockge | bool
+
+- name: Template Dockge compose file
+  ansible.builtin.template:
+    src: dockge-compose.yml.j2
+    dest: "{{ dockge_install_dir }}/compose.yml"
+    mode: '0644'
+  when: install_dockge | bool
+
+- name: Deploy Dockge
+  community.docker.docker_compose_v2:
+    project_src: "{{ dockge_install_dir }}"
+    state: present
+  when: install_dockge | bool

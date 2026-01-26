@@ -1,0 +1,17 @@
+collections:
+  - name: community.general
+    version: ">=3.0.0"
+  - name: community.docker
+    version: ">=3.0.0"
+  - name: ansible.posix
+    version: ">=1.0.0"
+  - name: devsec.hardening
+    version: ">=8.0.0"
+
+roles:
+  - name: geerlingguy.docker
+  - name: geerlingguy.firewall
+  - name: geerlingguy.clamav
+  - name: robertdebock.fail2ban
+  - name: robertdebock.cron
+  - name: robertdebock.users

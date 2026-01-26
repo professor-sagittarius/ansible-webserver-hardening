@@ -1,0 +1,23 @@
+
+- name: Check if netplan directory exists
+  ansible.builtin.stat:
+    path: /etc/netplan
+  register: netplan_dir
+
+- name: Validate network configuration variables
+  ansible.builtin.assert:
+    that:
+      - static_ip | length > 0
+      - gateway_ip | length > 0
+      - dns_servers | length > 0
+    fail_msg: "static_ip, gateway_ip, and dns_servers must all be defined"
+    quiet: true
+
+- name: Configure static IP with netplan
+  ansible.builtin.template:
+    src: netplan.yaml.j2
+    dest: /etc/netplan/90-default.yaml
+    mode: '0644'
+  notify: apply netplan
+  when: netplan_dir.stat.exists
+
