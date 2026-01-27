@@ -10,8 +10,9 @@ git clone https://github.com/professor-sagittarius/ansible-webserver-hardening.g
 cd ansible-webserver-hardening
 sudo ./bootstrap.sh
 
-# Set up the vault with your password
-ansible-vault edit group_vars/all/vault.yml
+# Create the vault directory and file
+mkdir -p group_vars/all
+ansible-vault create group_vars/all/vault.yml
 # Add: admin_password: "your-secure-password"
 
 # Edit inventory to configure users and settings
@@ -43,7 +44,10 @@ Sensitive data (passwords) should be stored in an encrypted vault file. The play
 ### Create or edit the vault
 
 ```bash
-# Create a new vault (if it doesn't exist)
+# Create the directory (if it doesn't exist)
+mkdir -p group_vars/all
+
+# Create a new vault
 ansible-vault create group_vars/all/vault.yml
 
 # Or edit an existing vault

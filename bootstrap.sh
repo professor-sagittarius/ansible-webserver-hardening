@@ -36,12 +36,19 @@ ansible-galaxy role install -r "$SCRIPT_DIR/requirements.yml"
 echo
 echo "=== Bootstrap complete ==="
 echo
-echo "Available playbooks:"
-ls -1 "$SCRIPT_DIR"/playbook_*.yml | xargs -n1 basename | sed 's/^/  - /'
+echo "Next steps:"
 echo
-echo "Example usage:"
-echo "  # Localhost deployment:"
-echo "  ansible-playbook -i inventory_localhost.yml playbook_localhost.yml"
+echo "  1. Create the vault for passwords:"
+echo "     mkdir -p group_vars/all"
+echo "     ansible-vault create group_vars/all/vault.yml"
+echo "     # Add: admin_password: \"your-secure-password\""
 echo
-echo "  # Remote host deployment:"
-echo "  ansible-playbook -i inventory_remote.yml playbook_remote.yml"
+echo "  2. Edit inventory to configure users and settings:"
+echo "     vim inventory_localhost.yml"
+echo
+echo "  3. Run the playbook:"
+echo "     # Localhost deployment:"
+echo "     ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass"
+echo
+echo "     # Remote host deployment:"
+echo "     ansible-playbook -i inventory_remote.yml playbook_remote.yml --ask-vault-pass"
