@@ -109,10 +109,6 @@
     - role: docker
 
     # Phase 5: Security hardening
-    - role: devsec.hardening.os_hardening
-
-    - role: devsec.hardening.ssh_hardening
-
     - role: geerlingguy.firewall
 
     - role: robertdebock.fail2ban
@@ -120,6 +116,10 @@
     - role: geerlingguy.clamav
 
     - role: robertdebock.cron
+
+    - role: devsec.hardening.os_hardening
+
+    - role: devsec.hardening.ssh_hardening
 
     # Phase 6: Network configuration (after firewall)
     - role: network
