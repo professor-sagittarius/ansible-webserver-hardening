@@ -68,14 +68,6 @@ Always run playbooks with `--ask-vault-pass`:
 ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
 ```
 
-Or use a vault password file:
-
-```bash
-echo "your-vault-password" > ~/.vault_pass
-chmod 600 ~/.vault_pass
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --vault-password-file ~/.vault_pass
-```
-
 **Note:** The vault file is not included in the repository (it's in `.gitignore`). You must create it after cloning.
 
 ## Roles
