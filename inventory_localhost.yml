@@ -7,12 +7,25 @@ all:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
 
+      users_group_list:
+        - name: docker
+
+      users_user_list:
+        - name: admin
+          groups:
+            - sudo
+            - docker
+          password: "{{ admin_password | password_hash('sha512') }}"
+          authorized_keys:
+            - "ssh-rsa ..." # Replace with your public key
+          expires: -1
+
       # Hostname configuration
       change_hostname: false
       vm_hostname: "debian-host"
 
       # Disk configuration
-      resize_disk: false
+      resize_disk: true
       disk_device: "/dev/sda"
       partition_number: 1
 

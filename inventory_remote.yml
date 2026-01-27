@@ -17,8 +17,14 @@ all:
     #   change_hostname: true
     #   vm_hostname: "docker-host-01"
     #   resize_disk: true
+    #   users_group_list:
+    #     - name: docker
     #   users_user_list:
     #     - name: admin
-    #       groups: sudo,docker
+    #       groups:
+    #         - sudo
+    #         - docker
+    #       password: "{{ admin_password | password_hash('sha512') }}"
     #       authorized_keys:
     #         - "ssh-ed25519 AAAAC3..."
+    #       expires: -1

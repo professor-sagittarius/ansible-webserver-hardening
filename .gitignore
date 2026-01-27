@@ -29,6 +29,8 @@ venv/
 *.key
 credentials*
 secrets*
+group_vars/all/vault.yml
+inventory_custom.yml
 
 # OS files
 .DS_Store

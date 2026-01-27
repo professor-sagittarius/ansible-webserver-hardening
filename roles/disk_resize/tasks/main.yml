@@ -1,51 +1,21 @@
-- name: Install parted
+- name: Install growpart (cloud-guest-utils)
   ansible.builtin.apt:
-    name: parted
+    name: cloud-guest-utils
     state: present
     update_cache: true
     cache_valid_time: 3600
 
-- name: Get current partition information
-  community.general.parted:
-    device: "{{ disk_device }}"
-    unit: MiB
-  register: disk_info
-
-- name: Get disk size
+- name: Grow partition to use all available space
   ansible.builtin.command:
-    cmd: "blockdev --getsize64 {{ disk_device }}"
-  register: disk_size_bytes
-  changed_when: false
-
-- name: Calculate target size in MiB
-  ansible.builtin.set_fact:
-    target_size_mib: "{{ (disk_size_bytes.stdout | int / 1024 / 1024) | int - 1 }}"
-
-- name: Get current partition end
-  ansible.builtin.set_fact:
-    current_end_mib: "{{ disk_info.partitions[partition_number - 1].end }}"
-
-- name: Resize partition to use all available space
-  community.general.parted:
-    device: "{{ disk_device }}"
-    number: "{{ partition_number }}"
-    part_end: "{{ target_size_mib }}MiB"
-    resize: true
-    state: present
-  when: (target_size_mib | int) > (current_end_mib | int)
-  notify: reboot system
+    cmd: "growpart {{ disk_device }} {{ partition_number }}"
+  register: growpart_result
+  changed_when: "'CHANGED' in growpart_result.stdout"
+  failed_when: growpart_result.rc != 0 and 'NOCHANGE' not in growpart_result.stdout
 
 - name: Resize filesystem
   ansible.builtin.command:
     cmd: "resize2fs {{ disk_device }}{{ partition_number }}"
-  when: (target_size_mib | int) > (current_end_mib | int)
   register: resize_result
   changed_when: "'nothing to do' not in resize_result.stderr"
   failed_when: resize_result.rc != 0 and 'Nothing to do' not in resize_result.stderr
-
-- name: Notify about pending reboot
-  ansible.builtin.debug:
-    msg: "Partition resized. A reboot is recommended but disk_resize_reboot is false. Consider rebooting manually."
-  when:
-    - (target_size_mib | int) > (current_end_mib | int)
-    - not disk_resize_reboot | bool
+  when: growpart_result.changed

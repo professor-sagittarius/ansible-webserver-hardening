@@ -10,11 +10,15 @@ git clone https://github.com/professor-sagittarius/ansible-webserver-hardening.g
 cd ansible-webserver-hardening
 sudo ./bootstrap.sh
 
+# Set up the vault with your password
+ansible-vault edit group_vars/all/vault.yml
+# Add: admin_password: "your-secure-password"
+
 # Edit inventory to configure users and settings
 vim inventory_localhost.yml
 
 # Run playbook
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml
+ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
 ```
 
 ## Requirements
@@ -32,14 +36,51 @@ ansible-playbook -i inventory_localhost.yml playbook_localhost.yml
 
 Both playbooks install all components with security hardening enabled.
 
+## Vault Setup
+
+Sensitive data (passwords) should be stored in an encrypted vault file. The playbooks expect passwords to be defined in `group_vars/all/vault.yml`.
+
+### Create or edit the vault
+
+```bash
+# Create a new vault (if it doesn't exist)
+ansible-vault create group_vars/all/vault.yml
+
+# Or edit an existing vault
+ansible-vault edit group_vars/all/vault.yml
+```
+
+### Vault contents
+
+```yaml
+admin_password: "your-secure-password-here"
+```
+
+### Using the vault
+
+Always run playbooks with `--ask-vault-pass`:
+
+```bash
+ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
+```
+
+Or use a vault password file:
+
+```bash
+echo "your-vault-password" > ~/.vault_pass
+chmod 600 ~/.vault_pass
+ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --vault-password-file ~/.vault_pass
+```
+
+**Note:** The vault file is not included in the repository (it's in `.gitignore`). You must create it after cloning.
+
 ## Roles
 
 ### Local Roles
 
 | Role | Description |
 |------|-------------|
-| `ssh` | Install OpenSSH server and generate host keys |
-| `docker` | Install Docker via geerlingguy.docker, plus Portainer |
+| `docker` | Install Docker via geerlingguy.docker, plus Portainer/Dockge |
 | `disk_resize` | Expand partition and filesystem to use all available disk space |
 | `guest_agent` | Install QEMU guest agent (for Proxmox/KVM VMs) |
 | `hostname` | Set system hostname |
@@ -52,7 +93,7 @@ Both playbooks install all components with security hardening enabled.
 |------|-------------|
 | `robertdebock.users` | User and group management |
 | `devsec.hardening.os_hardening` | Kernel and OS-level security hardening |
-| `devsec.hardening.ssh_hardening` | SSH server hardening |
+| `devsec.hardening.ssh_hardening` | SSH server hardening (includes OpenSSH installation) |
 | `geerlingguy.docker` | Docker installation (wrapped by local docker role) |
 | `geerlingguy.firewall` | iptables-based firewall |
 | `robertdebock.fail2ban` | Intrusion prevention (brute-force protection) |
@@ -61,9 +102,9 @@ Both playbooks install all components with security hardening enabled.
 
 ## Execution Phases
 
-1. **User setup** - Creates users with sudo/docker groups and SSH keys
+1. **User setup** - Creates groups and users with sudo/docker access and SSH keys
 2. **SSH lockout prevention check** - Validates safe to harden
-3. **Base system configuration** - SSH, disk resize, guest agent, hostname
+3. **Base system configuration** - Disk resize, guest agent, hostname
 4. **Docker installation** - Docker, Compose, Portainer
 5. **Security hardening** - OS hardening, SSH hardening, firewall, fail2ban, ClamAV, cron
 6. **Network configuration** - Static IP (if enabled)
@@ -72,23 +113,28 @@ Both playbooks install all components with security hardening enabled.
 
 ### User Management
 
-Users are managed via `robertdebock.users`. Define users in the inventory:
+Users are managed via `robertdebock.users`. Define users in the inventory with passwords referenced from the vault:
 
 ```yaml
+users_group_list:
+  - name: docker
+
 users_user_list:
   - name: admin
-    comment: "Admin User"
-    group: admin
-    groups: sudo,docker
-    password: "{{ 'mypassword' | password_hash('sha512') }}"
+    groups:
+      - sudo
+      - docker
+    password: "{{ admin_password | password_hash('sha512') }}"
     authorized_keys:
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5... admin@workstation"
-
-  - name: olduser
-    state: absent  # Removes user
+    expires: -1
 ```
 
-**Note:** Docker group membership is managed here via `groups: sudo,docker`, not via `docker_users`.
+**Important notes:**
+- `groups` must be a YAML list, not a comma-separated string
+- The `docker` group is created via `users_group_list` before the user is created
+- Passwords reference vault variables using Jinja2 templates
+- The `expires: -1` prevents password expiration
 
 ### SSH Hardening
 
@@ -114,16 +160,25 @@ all:
   hosts:
     localhost:
       ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+
+      # Groups to create (docker group needed before user creation)
+      users_group_list:
+        - name: docker
 
       # Users (robertdebock.users)
       users_user_list:
         - name: admin
-          groups: sudo,docker
+          groups:
+            - sudo
+            - docker
+          password: "{{ admin_password | password_hash('sha512') }}"
           authorized_keys:
             - "ssh-ed25519 AAAAC3..."
+          expires: -1
 
       # Hostname
-      change_hostname: true
+      change_hostname: false
       vm_hostname: "my-server"
 
       # Disk
@@ -151,21 +206,22 @@ See `all_variables.yml` for a complete reference of all configurable variables.
 ### Localhost Deployment
 
 ```bash
-vim inventory_localhost.yml
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml
+ansible-vault edit group_vars/all/vault.yml  # Set admin_password
+vim inventory_localhost.yml                   # Configure settings
+ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
 ```
 
 ### Remote Host Deployment
 
 ```bash
-vim inventory_remote.yml  # Add your hosts
-ansible-playbook -i inventory_remote.yml playbook_remote.yml
+vim inventory_remote.yml  # Add your hosts and user config
+ansible-playbook -i inventory_remote.yml playbook_remote.yml --ask-vault-pass
 ```
 
 ### Dry Run (Check Mode)
 
 ```bash
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --check
+ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --check --ask-vault-pass
 ```
 
 ## File Structure
@@ -176,12 +232,14 @@ ansible-webserver-hardening/
 ├── bootstrap.sh
 ├── requirements.yml
 ├── all_variables.yml          # Complete variable reference
+├── group_vars/
+│   └── all/
+│       └── vault.yml          # Encrypted passwords (ansible-vault)
 ├── inventory_localhost.yml    # Localhost inventory
 ├── inventory_remote.yml       # Remote hosts inventory
 ├── playbook_localhost.yml     # Localhost playbook
 ├── playbook_remote.yml        # Remote playbook
 └── roles/
-    ├── ssh/
     ├── docker/
     ├── disk_resize/
     ├── guest_agent/
@@ -200,8 +258,16 @@ ansible-webserver-hardening/
 - Run `sudo ./bootstrap.sh` to install dependencies
 
 **SSH lockout prevention failure:**
-- Ensure `users_user_list` includes a user with `groups: sudo` and `authorized_keys`
+- Ensure `users_user_list` includes a user with `groups: [sudo]` and `authorized_keys`
 - Or set `ssh_permit_root_login: 'yes'` for initial setup
+
+**"Group X does not exist" error:**
+- Add the group to `users_group_list` before referencing it in a user's `groups`
+- Example: Add `- name: docker` to `users_group_list`
+
+**Vault password errors:**
+- Ensure you're using `--ask-vault-pass` when running playbooks
+- Check that `group_vars/all/vault.yml` exists and contains the required password variables
 
 **Docker networking broken after hardening:**
 - The playbook automatically configures `net.ipv4.ip_forward: 1`

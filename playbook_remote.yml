@@ -7,16 +7,18 @@
 
   vars:
     # Users (robertdebock.users)
-    # sudo group is created by sudo package, docker group by docker installation
-    users_user_list: []
-    # Example:
+    # Define users_user_list and users_group_list in inventory. Example:
+    # users_group_list:
+    #   - name: docker
     # users_user_list:
     #   - name: admin
-    #     group: admin
-    #     groups: sudo,docker
-    #     sudo_options: "ALL=(ALL) NOPASSWD: ALL"
+    #     groups:
+    #       - sudo
+    #       - docker
+    #     password: "{{ admin_password | password_hash('sha512') }}"
     #     authorized_keys:
     #       - "ssh-ed25519 AAAAC3..."
+    #     expires: -1
 
     # Firewall (geerlingguy.firewall)
     firewall_allowed_tcp_ports:
@@ -89,14 +91,15 @@
   roles:
     # Phase 1: User setup (must happen before SSH hardening checks)
     - role: robertdebock.users
-      when: users_user_list | length > 0
+      vars:
+        users: "{{ users_user_list }}"
+        users_groups: "{{ users_group_list | default([]) }}"
+      when: users_user_list | default([]) | length > 0
 
     # Phase 2: SSH lockout prevention check
     - role: ssh_preflight
 
     # Phase 3: Base system configuration
-    - role: ssh
-
     - role: disk_resize
       when: resize_disk | default(false)
 
