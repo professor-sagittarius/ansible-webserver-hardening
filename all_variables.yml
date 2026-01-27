@@ -5,31 +5,24 @@
 # Playbooks:
 #   - playbook_localhost.yml: For localhost deployment
 #   - playbook_remote.yml: For remote host deployment
-#
-# Both playbooks install all components (hardened) with Portainer enabled.
 
 ---
-
-# =============================================================================
-# SSH Role (local)
-# =============================================================================
-# Installs OpenSSH server. SSH hardening is handled by devsec.hardening.ssh_hardening.
-
-# No configurable variables - this role only installs SSH and generates host keys.
-
 
 # =============================================================================
 # robertdebock.users (external)
 # =============================================================================
 # Manages users and groups on the system.
 # Full documentation: https://github.com/robertdebock/ansible-role-users
-#
-# Note: sudo group is created by sudo package, docker group by docker installation.
-# Use users_group_list only for custom groups.
 
-users_group_list: []                        # Custom groups to create
+users_ssh_key_directory: ssh_keys          # Location to store SSH keys for users
+users_shell: /bin/bash                      # Default shell for users
+users_cron_allow: true                      # Manage cron permissions via /etc/cron.allow
+users_create_home: true                     # Create home directories for users
+
+users_group_list: []                        # Groups to create
 # Example:
 # users_group_list:
+#   - name: docker
 #   - name: developers
 #     gid: 1100
 
@@ -40,9 +33,10 @@ users_user_list: []                         # Users to create/manage
 #     comment: "Admin User"
 #     uid: 1001
 #     group: admin                          # Primary group
-#     groups: sudo,docker                   # Additional groups
-#     password: "{{ 'password' | password_hash('sha512') }}"
-#     sudo_options: "ALL=(ALL) NOPASSWD: ALL"
+#     groups:                               # Additional groups (must be a list)
+#       - sudo
+#       - docker
+#     password: "{{ admin_password | password_hash('sha512') }}"
 #     authorized_keys:
 #       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."
 #     expires: -1                           # -1 = never expires
@@ -52,30 +46,65 @@ users_user_list: []                         # Users to create/manage
 
 
 # =============================================================================
-# Docker Role (local, wraps geerlingguy.docker)
+# geerlingguy.docker (external)
 # =============================================================================
-# Installs Docker, Docker Compose, and Portainer.
+# Docker installation and configuration.
+# Full documentation: https://github.com/geerlingguy/ansible-role-docker
 
-# geerlingguy.docker role variables
+# Docker edition and packages
 docker_edition: 'ce'                        # Docker edition: 'ce' or 'ee'
 docker_packages_state: present              # Package state: present, latest, absent
+
+# Service management
 docker_service_manage: true                 # Whether to manage the Docker service
 docker_service_state: started               # Service state: started, stopped
 docker_service_enabled: true                # Enable Docker on boot
+docker_restart_handler_state: restarted     # Handler state when restarting
+
+# Docker Compose plugin
 docker_install_compose_plugin: true         # Install Docker Compose plugin
+docker_compose_package: docker-compose-plugin
 docker_compose_package_state: present       # Compose package state
-docker_users: []                            # Managed by robertdebock.users instead
+
+# Standalone Docker Compose (alternative to plugin)
+docker_install_compose: false               # Install standalone docker-compose
+docker_compose_version: "v2.32.1"           # Version if using standalone
+docker_compose_path: /usr/local/bin/docker-compose
+
+# Repository configuration
+docker_add_repo: true                       # Enable Docker repo setup
+docker_repo_url: https://download.docker.com/linux
+docker_apt_release_channel: stable          # Release channel: stable, nightly
+
+# User management (prefer robertdebock.users instead)
+docker_users: []                            # Users to add to docker group
+
+# Docker daemon options
+docker_daemon_options: {}                   # Docker daemon configuration
+# Example:
+# docker_daemon_options:
+#   storage-driver: overlay2
+#   log-driver: json-file
+#   log-opts:
+#     max-size: "10m"
+#     max-file: "3"
+
+
+# =============================================================================
+# Docker Role (local, wraps geerlingguy.docker)
+# =============================================================================
+# Additional options for Portainer and Dockge.
 
 # Python Docker library (required for docker_compose_v2 module)
 install_docker_python: true
 
-# Portainer (container management UI) - enabled by default
+# Portainer (container management UI)
 install_portainer: true
 portainer_http_port: 8000                   # Portainer HTTP port
 portainer_https_port: 9443                  # Portainer HTTPS port
 portainer_data_dir: "/opt/portainer"        # Portainer data directory
 
-# Dockge (alternative container management UI) - disabled by default
+# Dockge (alternative container management UI)
 install_dockge: false
 dockge_port: 5001                           # Dockge web UI port
 dockge_install_dir: "/opt/dockge"           # Dockge installation directory
@@ -83,23 +112,401 @@ dockge_stacks_dir: "/opt/stacks"            # Dockge stacks directory
 
 
 # =============================================================================
+# geerlingguy.firewall (external)
+# =============================================================================
+# iptables-based firewall management.
+# Full documentation: https://github.com/geerlingguy/ansible-role-firewall
+
+firewall_state: started                     # Firewall state
+firewall_enabled_at_boot: true              # Enable firewall on boot
+
+# Port configuration
+firewall_allowed_tcp_ports:                 # TCP ports to allow
+  - "22"
+  - "80"
+  - "443"
+firewall_allowed_udp_ports: []              # UDP ports to allow
+
+# Port forwarding
+firewall_forwarded_tcp_ports: []            # TCP port forwarding rules
+firewall_forwarded_udp_ports: []            # UDP port forwarding rules
+# Example:
+# firewall_forwarded_tcp_ports:
+#   - { src: "2222", dest: "22" }
+
+# Additional rules
+firewall_additional_rules: []               # Custom iptables rules
+firewall_ip6_additional_rules: []           # Custom ip6tables rules
+# Example:
+# firewall_additional_rules:
+#   - "iptables -A INPUT -p tcp --dport 8080 -j ACCEPT"
+
+# IPv6 support
+firewall_enable_ipv6: true                  # Enable IPv6 firewall rules
+
+# Logging
+firewall_log_dropped_packets: true          # Log dropped packets
+
+# Rule management
+firewall_flush_rules_and_chains: false      # KEEP FALSE for Docker compatibility!
+
+# Disable other firewalls
+firewall_disable_firewalld: false           # Disable firewalld
+firewall_disable_ufw: false                 # Disable ufw
+
+
+# =============================================================================
+# robertdebock.fail2ban (external)
+# =============================================================================
+# Intrusion prevention (brute-force protection).
+# Full documentation: https://github.com/robertdebock/ansible-role-fail2ban
+
+# Logging
+fail2ban_loglevel: INFO                     # Log level
+fail2ban_logtarget: /var/log/fail2ban.log   # Log file path
+
+# Ban configuration
+fail2ban_ignoreself: "true"                 # Ignore self
+fail2ban_ignoreips:                         # IPs to never ban
+  - "127.0.0.1/8 ::1"
+# Example with local network:
+# fail2ban_ignoreips:
+#   - "127.0.0.1/8 ::1 192.168.1.0/24"
+
+fail2ban_bantime: 600                       # Ban duration in seconds (10 min default)
+fail2ban_findtime: 600                      # Time window for counting failures
+fail2ban_maxretry: 5                        # Failed attempts before ban
+
+# Email notifications
+fail2ban_destemail: root@localhost          # Destination email for notifications
+fail2ban_sender: "root@{{ ansible_fqdn }}"  # Sender email address
+
+# Fail2ban configuration
+fail2ban_configuration: []                  # fail2ban.conf settings
+# Example:
+# fail2ban_configuration:
+#   - option: loglevel
+#     value: "INFO"
+#     section: Definition
+
+# Jail configuration
+fail2ban_jail_configuration: []             # jail.conf settings
+# Example (enable SSH jail):
+# fail2ban_jail_configuration:
+#   - option: enabled
+#     value: "true"
+#     section: sshd
+
+# Custom filters
+# fail2ban_filterd_path:                    # Path to custom filter.d files
+
+
+# =============================================================================
+# geerlingguy.clamav (external)
+# =============================================================================
+# ClamAV antivirus scanning engine.
+# Full documentation: https://github.com/geerlingguy/ansible-role-clamav
+
+# ClamAV daemon
+clamav_daemon_state: started                # ClamAV daemon state
+clamav_daemon_enabled: true                 # Enable ClamAV on boot
+
+# Freshclam (virus definition updater)
+clamav_freshclam_daemon_state: started      # Freshclam daemon state
+clamav_freshclam_daemon_enabled: true       # Enable freshclam on boot
+
+# Daemon configuration changes
+clamav_daemon_configuration_changes: []     # Custom daemon configuration
+# Example:
+# clamav_daemon_configuration_changes:
+#   - regexp: '^.*Example$'
+#     state: absent
+
+
+# =============================================================================
+# robertdebock.cron (external)
+# =============================================================================
+# Cron daemon management.
+# Full documentation: https://github.com/robertdebock/ansible-role-cron
+
+cron_shell: /bin/bash                       # Shell for running cronjobs
+cron_path: /sbin:/bin:/usr/sbin:/usr/bin    # PATH for cron jobs
+cron_mailto: root                           # Email address for cron output
+
+
+# =============================================================================
+# devsec.hardening.ssh_hardening (external)
+# =============================================================================
+# SSH server security hardening from DevSec Hardening Framework.
+# Full documentation: https://github.com/dev-sec/ansible-collection-hardening
+
+# Enable/disable hardening
+ssh_hardening_enabled: true                 # Set to false to disable role
+ssh_server_hardening: true                  # Harden SSH server
+ssh_client_hardening: true                  # Harden SSH client
+
+# Server configuration
+ssh_server_enabled: true                    # Start sshd
+ssh_server_service_enabled: true            # Enable sshd at boot
+ssh_server_ports: ["22"]                    # SSH listening ports
+ssh_listen_to: [0.0.0.0]                    # IP addresses to listen on
+
+# Authentication
+ssh_permit_root_login: "no"                 # Root login: 'yes', 'no', 'prohibit-password', 'forced-commands-only'
+ssh_server_password_login: false            # Allow password authentication
+ssh_pubkey_authentication: true             # Allow public key authentication
+sshd_authenticationmethods: publickey       # Authentication methods
+ssh_max_auth_retries: 2                     # Maximum authentication attempts
+
+# Session settings
+ssh_login_grace_time: 30s                   # Time allowed for authentication
+ssh_max_sessions: 10                        # Maximum sessions per connection
+ssh_client_alive_interval: 300              # Client alive interval (seconds)
+ssh_client_alive_count: 3                   # Client alive count max
+
+# Forwarding
+ssh_allow_tcp_forwarding: "no"              # TCP forwarding: 'yes', 'no', 'local', 'all', 'remote'
+ssh_allow_agent_forwarding: false           # Allow SSH agent forwarding
+ssh_x11_forwarding: false                   # Allow X11 forwarding
+ssh_gateway_ports: false                    # Allow binding forwarded ports
+ssh_permit_tunnel: "no"                     # Allow SSH tunnels
+
+# DNS and networking
+ssh_use_dns: false                          # DNS lookups for remote hosts
+network_ipv6_enable: true                   # Enable IPv6 support
+
+# Compression
+ssh_compression: false                      # Enable compression (server)
+ssh_client_compression: false               # Enable compression (client)
+
+# PAM and GSSAPI
+ssh_use_pam: true                           # Use PAM authentication
+ssh_gssapi_support: false                   # GSSAPI authentication
+ssh_gssapi_delegation: false                # GSSAPI credential forwarding
+
+# User/group restrictions
+ssh_allow_users: ""                         # Allowed users (space-separated)
+ssh_deny_users: ""                          # Denied users (space-separated)
+ssh_allow_groups: ""                        # Allowed groups (space-separated)
+ssh_deny_groups: ""                         # Denied groups (space-separated)
+
+# Key configuration
+ssh_host_rsa_key_size: 4096                 # RSA key size
+ssh_authorized_keys_file: ""                # Custom authorized_keys location
+ssh_host_key_algorithms: []                 # Host key algorithms offered
+ssh_host_certificates: []                   # Host certificates
+
+# Certificate authority
+ssh_trusted_user_ca_keys_file: ""           # CA keys file for user certs
+ssh_trusted_user_ca_keys: []                # CA public keys
+ssh_authorized_principals_file: ""          # Principals file path
+ssh_authorized_principals: []               # Authorized principals
+
+# Revoked keys
+ssh_server_revoked_keys: []                 # Public keys that are never accepted
+
+# Banners and messages
+ssh_print_motd: false                       # Print MOTD
+ssh_print_pam_motd: false                   # Print PAM MOTD
+ssh_print_last_log: false                   # Show last login info
+ssh_banner: false                           # Show warning banner
+ssh_banner_path: /etc/ssh/banner.txt        # Banner file path
+ssh_print_debian_banner: false              # Show Debian version in banner
+
+# SFTP configuration
+sftp_enabled: true                          # Enable SFTP subsystem
+sftp_chroot: true                           # Enable SFTP chroot
+sftp_chroot_dir: /home/%u                   # SFTP chroot directory
+sftp_umask: "0027"                          # SFTP umask
+
+# Connection limits
+ssh_max_startups: 10:30:60                  # Max concurrent unauthenticated connections
+
+# Environment
+ssh_server_permit_environment_vars: "no"    # Permit environment variables
+ssh_server_accept_env_vars: ""              # Accepted environment variables
+
+# Security
+ssh_challengeresponseauthentication: false  # Challenge-response authentication
+sshd_moduli_minimum: 2048                   # Minimum moduli size
+sshd_strict_modes: true                     # Strict file permission checking
+
+# Logging
+sshd_syslog_facility: AUTH                  # Syslog facility
+sshd_log_level: VERBOSE                     # Log level
+
+# Custom options
+ssh_custom_options: []                      # Custom SSH client options
+sshd_custom_options: []                     # Custom SSH daemon options
+
+# Match blocks for conditional configuration
+ssh_server_match_user: false                # Match User blocks
+ssh_server_match_group: false               # Match Group blocks
+ssh_server_match_address: false             # Match Address blocks
+ssh_server_match_local_port: false          # Match LocalPort blocks
+# Example:
+# ssh_server_match_user:
+#   - user: sftp_user
+#     rules:
+#       - "ForceCommand internal-sftp"
+#       - "ChrootDirectory /home/%u"
+
+# Remote hosts (client config)
+ssh_remote_hosts: []                        # Host-specific client options
+# Example:
+# ssh_remote_hosts:
+#   - names: ['example.com']
+#     options: ['Port 2222', 'ForwardAgent yes']
+
+
+# =============================================================================
+# devsec.hardening.os_hardening (external)
+# =============================================================================
+# OS-level security hardening from DevSec Hardening Framework.
+# Full documentation: https://github.com/dev-sec/ansible-collection-hardening
+
+# Enable/disable hardening
+os_hardening_enabled: true                  # Set to false to disable role
+
+# Password policy
+os_auth_pw_max_age: 60                      # Maximum password age (days)
+os_auth_pw_min_age: 7                       # Minimum password age (days)
+os_auth_pw_warn_age: 7                      # Password expiry warning (days)
+os_auth_pw_remember: 5                      # Number of passwords to remember
+os_auth_retries: 5                          # Authentication retry limit
+os_auth_lockout_time: 600                   # Account lockout time (seconds)
+os_auth_timeout: 60                         # Authentication timeout
+
+# Password hashing
+os_sha_crypt_min_rounds: "640000"           # Minimum SHA crypt rounds
+os_sha_crypt_max_rounds: "640000"           # Maximum SHA crypt rounds
+
+# User configuration
+os_auth_allow_homeless: false               # Allow users without home directories
+os_security_users_allow: []                 # Users allowed to change user
+os_ignore_users: [vagrant, kitchen]         # System accounts to leave unchanged
+os_users_without_password_ageing: []        # Users exempt from password ageing
+os_user_pw_ageing: true                     # Enforce password ageing on users
+os_rootuser_pw_ageing: false                # Enforce password ageing on root
+
+# Home directory permissions
+os_chmod_home_folders: true                 # chmod 700 on home folders
+os_chmod_rootuser_home_folder: true         # chmod 700 on root home folder
+os_ignore_home_folder_users: []             # Users to skip home chmod
+
+# Root user security
+os_remove_additional_root_users: false      # Remove extra UID=0 users
+os_auth_root_ttys: [console, tty1, tty2, tty3, tty4, tty5, tty6]
+
+# PAM configuration
+os_auth_pam_oddjob_mkhomedir: false         # Use oddjob for home creation
+os_auth_pam_passwdqc_enable: true           # Enable passwdqc (Debian)
+os_auth_pam_passwdqc_options: "min=disabled,disabled,16,12,8"
+os_auth_pam_pwquality_options: "try_first_pass retry=3 authtok_type="
+
+# Core dumps
+os_security_kernel_enable_core_dump: false  # Allow core dumps
+
+# SUID/SGID
+os_security_suid_sgid_enforce: true         # Enforce SUID/SGID restrictions
+os_security_suid_sgid_blacklist: []         # Files to remove SUID/SGID from
+os_security_suid_sgid_whitelist: []         # Files to keep SUID/SGID on
+os_security_suid_sgid_remove_from_unknown: false
+
+# Package security
+os_security_packages_clean: true            # Remove insecure packages
+os_security_packages_list:                  # Packages to remove
+  - xinetd
+  - inetd
+  - ypserv
+  - telnet-server
+  - rsh-server
+  - prelink
+
+# Filesystem security
+os_unused_filesystems:                      # Disabled filesystems
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - squashfs
+  - udf
+  - vfat
+  - dccp
+  - rds
+  - sctp
+  - tipc
+os_filesystem_whitelist: []                 # Filesystems to keep enabled
+
+# Sysctl settings (network/kernel hardening)
+sysctl_overwrite: {}                        # Override default sysctl settings
+# Example for Docker compatibility:
+# sysctl_overwrite:
+#   net.ipv4.ip_forward: 1
+#   net.ipv6.conf.all.forwarding: 1
+
+# Feature toggles
+os_auditd_enabled: true                     # Install and configure auditd
+os_cron_enabled: true                       # Configure cron security
+os_ctrlaltdel_disabled: false               # Disable Ctrl+Alt+Del
+os_limits_enabled: true                     # Configure limits
+os_login_defs_enabled: true                 # Configure login.defs
+os_minimize_access_enabled: true            # Minimize file access
+os_modprobe_enabled: true                   # Configure modprobe
+os_pam_enabled: true                        # Configure PAM
+os_profile_enabled: true                    # Configure profile
+os_rhosts_enabled: true                     # Configure rhosts
+os_securetty_enabled: true                  # Configure securetty
+os_sysctl_enabled: true                     # Configure sysctl
+os_user_accounts_enabled: true              # Configure user accounts
+os_apt_enabled: true                        # Configure apt (Debian)
+os_yum_enabled: true                        # Configure yum (RHEL)
+os_selinux_enabled: true                    # Configure SELinux
+
+# Auditd configuration
+os_auditd_flush: INCREMENTAL
+os_auditd_freq: 20
+os_auditd_max_log_file: 6
+os_auditd_max_log_file_action: keep_logs
+os_auditd_log_file: /var/log/audit/audit.log
+os_auditd_log_format: RAW
+os_auditd_space_left: 75
+os_auditd_space_left_action: SYSLOG
+os_auditd_admin_space_left: 50
+os_auditd_admin_space_left_action: SUSPEND
+os_auditd_disk_full_action: SUSPEND
+os_auditd_disk_error_action: SUSPEND
+os_auditd_action_mail_acct: root
+os_auditd_num_logs: 5
+
+# SELinux (RHEL/CentOS)
+os_selinux_state: enforcing                 # SELinux state
+os_selinux_policy: targeted                 # SELinux policy
+
+# Session timeout
+os_security_auto_logout: 0                  # Auto logout timeout (0 = disabled)
+
+# .netrc
+os_netrc_enabled: true                      # Manage .netrc files
+os_netrc_whitelist_user: []                 # Users to keep .netrc for
+
+
+# =============================================================================
 # Disk Resize Role (local)
 # =============================================================================
 # Expands partition and filesystem to use all available disk space.
 
-# Enable disk resize
-resize_disk: false
-
-disk_device: "/dev/sda"                     # Device to resize (e.g., /dev/sda, /dev/vda)
-partition_number: 1                         # Partition number (e.g., 1 for /dev/sda1)
-disk_resize_reboot: false                   # Reboot after resize (recommended: true)
+resize_disk: false                          # Enable disk resize
+disk_device: "/dev/sda"                     # Device to resize
+partition_number: 1                         # Partition number
 
 
 # =============================================================================
 # Guest Agent Role (local)
 # =============================================================================
 # Installs QEMU guest agent for Proxmox/KVM VMs.
-# Always installed - no configurable variables.
+# No configurable variables.
 
 
 # =============================================================================
@@ -107,9 +514,7 @@ disk_resize_reboot: false                   # Reboot after resize (recommended: 
 # =============================================================================
 # Sets the system hostname.
 
-# Enable hostname change
-change_hostname: false
-
+change_hostname: false                      # Enable hostname change
 vm_hostname: "debian-vm"                    # Hostname to set
 
 
@@ -118,13 +523,11 @@ vm_hostname: "debian-vm"                    # Hostname to set
 # =============================================================================
 # Configures static IP with netplan.
 
-# Enable static IP configuration
-configure_static_ip: false
-
-network_interface: "ens18"                  # Interface name (e.g., eth0, ens18, enp0s3)
-static_ip: ""                               # Static IP with CIDR (e.g., 192.168.1.100/24)
-gateway_ip: ""                              # Gateway IP (e.g., 192.168.1.1)
-dns_servers: []                             # List of DNS servers
+configure_static_ip: false                  # Enable static IP configuration
+network_interface: "ens18"                  # Interface name
+static_ip: ""                               # Static IP with CIDR
+gateway_ip: ""                              # Gateway IP
+dns_servers: []                             # DNS servers
 # Example:
 # dns_servers:
 #   - "8.8.8.8"
@@ -135,88 +538,5 @@ dns_servers: []                             # List of DNS servers
 # SSH Preflight Role (local)
 # =============================================================================
 # Pre-flight checks to prevent SSH lockout during hardening.
-# Uses ssh_permit_root_login and ssh_password_authentication variables.
-
-
-# =============================================================================
-# devsec.hardening.ssh_hardening (external)
-# =============================================================================
-# SSH server security hardening from DevSec Hardening Framework.
-# Full documentation: https://github.com/dev-sec/ansible-collection-hardening
-
-ssh_permit_root_login: 'no'                 # Permit root SSH login
-                                            # Values: 'yes', 'no', 'prohibit-password', 'forced-commands-only'
-ssh_password_authentication: false          # Allow password authentication (true/false)
-sftp_enabled: true                          # Enable SFTP subsystem (required for Ansible)
-ssh_server_ports: ['22']                    # SSH listening ports
-ssh_max_auth_retries: 3                     # Maximum authentication attempts
-
-
-# =============================================================================
-# devsec.hardening.os_hardening (external)
-# =============================================================================
-# OS-level security hardening from DevSec Hardening Framework.
-# Full documentation: https://github.com/dev-sec/ansible-collection-hardening
-
-# Sysctl overrides (set in playbook for Docker compatibility)
-# sysctl_overwrite:
-#   net.ipv4.ip_forward: 1
-#   net.ipv6.conf.all.forwarding: 1
-
-
-# =============================================================================
-# geerlingguy.firewall (external)
-# =============================================================================
-# iptables-based firewall management.
-# Full documentation: https://github.com/geerlingguy/ansible-role-firewall
-
-# Firewall ports are set in playbook. To add custom ports, override in inventory:
-# firewall_allowed_tcp_ports:
-#   - "22"
-#   - "80"
-#   - "443"
-#   - "8000"   # Portainer HTTP
-#   - "9443"   # Portainer HTTPS
-#   - "3000"   # Custom app
-
-firewall_allowed_udp_ports: []              # UDP ports to allow
-firewall_flush_rules_and_chains: false      # Preserve Docker iptables rules (keep false!)
-firewall_log_dropped_packets: true          # Log dropped packets
-
-
-# =============================================================================
-# robertdebock.fail2ban (external)
-# =============================================================================
-# Intrusion prevention (brute-force protection).
-# Full documentation: https://github.com/robertdebock/ansible-role-fail2ban
-
-fail2ban_bantime: 3600                      # Ban duration in seconds (1 hour)
-fail2ban_findtime: 600                      # Time window for counting failures (10 minutes)
-fail2ban_maxretry: 5                        # Failed attempts before ban
-fail2ban_ignoreips: "127.0.0.1/8 ::1"       # IPs to never ban
-# Example with local network:
-# fail2ban_ignoreips: "127.0.0.1/8 ::1 {{ ansible_default_ipv4.network | default('') }}/24"
-
-fail2ban_jail_configuration:                # Jail configuration
-  - option: enabled
-    value: "true"
-    section: sshd                           # Enable SSH jail
-
-
-# =============================================================================
-# geerlingguy.clamav (external)
-# =============================================================================
-# ClamAV antivirus scanning engine.
-# Full documentation: https://github.com/geerlingguy/ansible-role-clamav
-
-clamav_daemon_state: started                # ClamAV daemon state
-clamav_daemon_enabled: true                 # Enable ClamAV on boot
-
-
-# =============================================================================
-# robertdebock.cron (external)
-# =============================================================================
-# Cron daemon management.
-# Full documentation: https://github.com/robertdebock/ansible-role-cron
-
-# No commonly customized variables - installs and enables cron service.
+# Uses ssh_permit_root_login and ssh_password_authentication from ssh_hardening.
+# No additional configurable variables.
