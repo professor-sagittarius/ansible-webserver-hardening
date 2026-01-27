@@ -273,12 +273,12 @@ ansible-webserver-hardening/
 - The playbook automatically configures `net.ipv4.ip_forward: 1`
 - Check firewall allows Docker ports
 
-## Security Features
 
-| Category | Implementation |
-|----------|----------------|
-| **OS Hardening** | Kernel parameters, filesystem restrictions, PAM policies |
-| **SSH Hardening** | Strong ciphers, key-only auth (configurable), fail2ban protection |
-| **Firewall** | iptables rules, only required ports open |
-| **Intrusion Prevention** | Fail2ban with SSH jail enabled |
-| **Antivirus** | ClamAV with automatic definition updates |
+
+
+
+
+
+
+
+
