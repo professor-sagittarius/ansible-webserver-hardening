@@ -105,41 +105,6 @@ ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-p
 5. **Security hardening** - OS hardening, SSH hardening, firewall, fail2ban, ClamAV, cron
 6. **Network configuration** - Static IP (if enabled)
 
-## Configuration
-
-### User Management
-
-Users are managed via `robertdebock.users`. Define users in the inventory with passwords referenced from the vault:
-
-```yaml
-users_group_list:
-  - name: docker
-
-users_user_list:
-  - name: admin
-    groups:
-      - sudo
-      - docker
-    password: "{{ admin_password | password_hash('sha512') }}"
-    authorized_keys:
-      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5... admin@workstation"
-    expires: -1
-```
-
-**Important notes:**
-- `groups` must be a YAML list, not a comma-separated string
-- The `docker` group is created via `users_group_list` before the user is created
-- Passwords reference vault variables using Jinja2 templates
-- The `expires: -1` prevents password expiration
-
-### SSH Hardening
-
-```yaml
-# Values: 'yes', 'no', 'prohibit-password', 'forced-commands-only'
-ssh_permit_root_login: 'no'
-ssh_password_authentication: false
-```
-
 ### Lockout Prevention
 
 The `ssh_preflight` role runs before SSH hardening and **fails the playbook** if the configuration would cause lockout:
@@ -149,51 +114,7 @@ The `ssh_preflight` role runs before SSH hardening and **fails the playbook** if
 
 The users role runs before ssh_preflight, so users defined in `users_user_list` will be created first.
 
-### Inventory Variables
-
-```yaml
-all:
-  hosts:
-    localhost:
-      ansible_connection: local
-      ansible_python_interpreter: /usr/bin/python3
-
-      # Groups to create (docker group needed before user creation)
-      users_group_list:
-        - name: docker
-
-      # Users (robertdebock.users)
-      users_user_list:
-        - name: admin
-          groups:
-            - sudo
-            - docker
-          password: "{{ admin_password | password_hash('sha512') }}"
-          authorized_keys:
-            - "ssh-ed25519 AAAAC3..."
-          expires: -1
-
-      # Hostname
-      change_hostname: false
-      vm_hostname: "my-server"
-
-      # Disk
-      resize_disk: true
-      disk_device: "/dev/sda"
-      partition_number: 1
-
-      # Network (static IP)
-      configure_static_ip: false
-      network_interface: "eth0"
-      static_ip: "192.168.1.100/24"
-      gateway_ip: "192.168.1.1"
-      dns_servers:
-        - "8.8.8.8"
-
-      # SSH hardening
-      ssh_permit_root_login: 'no'
-      ssh_password_authentication: false
-```
+### Configuration
 
 See `all_variables.yml` for a complete reference of all configurable variables.
 
@@ -268,13 +189,3 @@ ansible-webserver-hardening/
 **Docker networking broken after hardening:**
 - The playbook automatically configures `net.ipv4.ip_forward: 1`
 - Check firewall allows Docker ports
-
-
-
-
-
-
-
-
-
-
