@@ -23,8 +23,7 @@ dockge_port: 5001
 dockge_install_dir: "/opt/dockge"
 dockge_stacks_dir: "/opt/stacks"
 
-# Docker-compatible sysctl settings for os-hardening
-# Required to prevent os-hardening from breaking Docker networking
-docker_sysctl_overwrite:
-  net.ipv4.ip_forward: 1
-  net.ipv6.conf.all.forwarding: 1
+# Docker daemon log rotation
+docker_log_driver: "json-file"
+docker_log_max_size: "10m"
+docker_log_max_file: "3"

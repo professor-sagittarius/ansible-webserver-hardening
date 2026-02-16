@@ -1,5 +1,5 @@
 # Inventory for remote host deployment
-# Usage: ansible-playbook -i inventory_remote.yml playbook_remote.yml
+# Usage: ansible-playbook -i inventory_remote.yml playbook.yml
 
 all:
   vars:
@@ -14,8 +14,6 @@ all:
     # Example:
     # server-01:
     #   ansible_host: 192.168.1.101
-    #   change_hostname: true
-    #   vm_hostname: "docker-host-01"
     #   resize_disk: true
     #   users_group_list:
     #     - name: docker

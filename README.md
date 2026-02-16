@@ -19,7 +19,7 @@ ansible-vault create group_vars/all/vault.yml
 vim inventory_localhost.yml
 
 # Run playbook
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
+ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 ```
 
 ## Requirements
@@ -28,18 +28,9 @@ ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-p
 - Root access
 - Internet connection (for package installation)
 
-## Playbooks
-
-| Playbook | Description |
-|----------|-------------|
-| `playbook_localhost.yml` | Hardened setup for localhost deployment |
-| `playbook_remote.yml` | Hardened setup for remote host deployment |
-
-Both playbooks install all components with security hardening enabled.
-
 ## Vault Setup
 
-Sensitive data (passwords) should be stored in an encrypted vault file. The playbooks expect passwords to be defined in `group_vars/all/vault.yml`.
+Sensitive data (passwords) should be stored in an encrypted vault file. The playbook expects passwords to be defined in `group_vars/all/vault.yml`.
 
 ### Create or edit the vault
 
@@ -65,7 +56,7 @@ admin_password: "your-secure-password-here"
 Always run playbooks with `--ask-vault-pass`:
 
 ```bash
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
+ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 ```
 
 **Note:** The vault file is not included in the repository (it's in `.gitignore`). You must create it after cloning.
@@ -76,11 +67,8 @@ ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-p
 
 | Role | Description |
 |------|-------------|
-| `docker` | Install Docker via geerlingguy.docker, plus Portainer/Dockge |
+| `docker` | Install Docker via geerlingguy.docker, plus Portainer/Dockge. Configures daemon.json for log rotation. |
 | `disk_resize` | Expand partition and filesystem to use all available disk space |
-| `guest_agent` | Install QEMU guest agent (for Proxmox/KVM VMs) |
-| `hostname` | Set system hostname |
-| `network` | Configure static IP with netplan |
 | `ssh_preflight` | Pre-flight checks to prevent SSH lockout during hardening |
 
 ### External Roles
@@ -100,10 +88,13 @@ ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-p
 
 1. **User setup** - Creates groups and users with sudo/docker access and SSH keys
 2. **SSH lockout prevention check** - Validates safe to harden
-3. **Base system configuration** - Disk resize, guest agent, hostname
-4. **Docker installation** - Docker, Compose, Portainer
-5. **Security hardening** - OS hardening, SSH hardening, firewall, fail2ban, ClamAV, cron
-6. **Network configuration** - Static IP (if enabled)
+3. **Base system configuration** - Disk resize (if enabled)
+4. **Docker installation** - Docker, Compose, daemon.json log rotation, Portainer/Dockge
+5. **Security hardening** - Firewall, fail2ban, ClamAV, cron, OS hardening, SSH hardening
+
+### Firewall and Docker
+
+The firewall only opens port 22 (SSH) by default. Docker manages its own iptables rules that bypass the host firewall, so Docker-exposed service ports do not need firewall rules.
 
 ### Lockout Prevention
 
@@ -125,20 +116,20 @@ See `all_variables.yml` for a complete reference of all configurable variables.
 ```bash
 ansible-vault edit group_vars/all/vault.yml  # Set admin_password
 vim inventory_localhost.yml                   # Configure settings
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass
+ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 ```
 
 ### Remote Host Deployment
 
 ```bash
 vim inventory_remote.yml  # Add your hosts and user config
-ansible-playbook -i inventory_remote.yml playbook_remote.yml --ask-vault-pass
+ansible-playbook -i inventory_remote.yml playbook.yml --ask-vault-pass
 ```
 
 ### Dry Run (Check Mode)
 
 ```bash
-ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --check --ask-vault-pass
+ansible-playbook -i inventory_localhost.yml playbook.yml --check --ask-vault-pass
 ```
 
 ## File Structure
@@ -154,14 +145,10 @@ ansible-webserver-hardening/
 │       └── vault.yml          # Encrypted passwords (ansible-vault)
 ├── inventory_localhost.yml    # Localhost inventory
 ├── inventory_remote.yml       # Remote hosts inventory
-├── playbook_localhost.yml     # Localhost playbook
-├── playbook_remote.yml        # Remote playbook
+├── playbook.yml               # Main playbook (localhost and remote)
 └── roles/
     ├── docker/
     ├── disk_resize/
-    ├── guest_agent/
-    ├── hostname/
-    ├── network/
     └── ssh_preflight/
 ```
 
@@ -187,5 +174,5 @@ ansible-webserver-hardening/
 - Check that `group_vars/all/vault.yml` exists and contains the required password variables
 
 **Docker networking broken after hardening:**
-- The playbook automatically configures `net.ipv4.ip_forward: 1`
-- Check firewall allows Docker ports
+- The playbook automatically configures `net.ipv4.ip_forward: 1` via sysctl
+- Docker manages its own iptables rules; the host firewall does not need to open Docker service ports

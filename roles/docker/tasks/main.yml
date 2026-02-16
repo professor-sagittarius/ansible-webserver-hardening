@@ -3,6 +3,17 @@
   ansible.builtin.include_role:
     name: geerlingguy.docker
 
+# Configure Docker daemon (log rotation, etc.)
+- name: Template Docker daemon.json
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: restart docker
+
+- name: Flush handlers to apply daemon.json before deploying containers
+  ansible.builtin.meta: flush_handlers
+
 # Install Python Docker library for docker_compose_v2 module
 - name: Install pip for Docker Python library
   ansible.builtin.apt:

@@ -1,5 +1,5 @@
 # Inventory for localhost deployment
-# Usage: ansible-playbook -i inventory_localhost.yml playbook_localhost.yml
+# Usage: ansible-playbook -i inventory_localhost.yml playbook.yml
 
 all:
   hosts:
@@ -20,23 +20,10 @@ all:
             - "ssh-rsa ..." # Replace with your public key
           expires: -1
 
-      # Hostname configuration
-      change_hostname: false
-      vm_hostname: "debian-host"
-
       # Disk configuration
       resize_disk: true
       disk_device: "/dev/sda"
       partition_number: 1
-
-      # Network configuration (static IP)
-      configure_static_ip: false
-      network_interface: "eth0"
-      static_ip: "192.168.1.100/24"
-      gateway_ip: "192.168.1.1"
-      dns_servers:
-        - "8.8.8.8"
-        - "8.8.4.4"
 
       # SSH hardening (set to 'yes'/true for initial setup, 'no'/false for hardened)
       ssh_permit_root_login: 'no'

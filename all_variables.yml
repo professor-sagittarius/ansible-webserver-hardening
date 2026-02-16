@@ -2,9 +2,8 @@
 # This file documents all configurable variables for all roles in this project.
 # Copy the variables you need to your inventory file.
 #
-# Playbooks:
-#   - playbook_localhost.yml: For localhost deployment
-#   - playbook_remote.yml: For remote host deployment
+# Playbook:
+#   - playbook.yml: For both localhost and remote deployment
 
 ---
 
@@ -110,6 +109,11 @@ dockge_port: 5001                           # Dockge web UI port
 dockge_install_dir: "/opt/dockge"           # Dockge installation directory
 dockge_stacks_dir: "/opt/stacks"            # Dockge stacks directory
 
+# Docker daemon log rotation
+docker_log_driver: "json-file"              # Docker log driver
+docker_log_max_size: "10m"                  # Maximum size per log file
+docker_log_max_file: "3"                    # Maximum number of log files
+
 
 # =============================================================================
 # geerlingguy.firewall (external)
@@ -123,8 +127,6 @@ firewall_enabled_at_boot: true              # Enable firewall on boot
 # Port configuration
 firewall_allowed_tcp_ports:                 # TCP ports to allow
   - "22"
-  - "80"
-  - "443"
 firewall_allowed_udp_ports: []              # UDP ports to allow
 
 # Port forwarding
@@ -500,38 +502,7 @@ os_netrc_whitelist_user: []                 # Users to keep .netrc for
 resize_disk: false                          # Enable disk resize
 disk_device: "/dev/sda"                     # Device to resize
 partition_number: 1                         # Partition number
-
-
-# =============================================================================
-# Guest Agent Role (local)
-# =============================================================================
-# Installs QEMU guest agent for Proxmox/KVM VMs.
-# No configurable variables.
-
-
-# =============================================================================
-# Hostname Role (local)
-# =============================================================================
-# Sets the system hostname.
-
-change_hostname: false                      # Enable hostname change
-vm_hostname: "debian-vm"                    # Hostname to set
-
-
-# =============================================================================
-# Network Role (local)
-# =============================================================================
-# Configures static IP with netplan.
-
-configure_static_ip: false                  # Enable static IP configuration
-network_interface: "ens18"                  # Interface name
-static_ip: ""                               # Static IP with CIDR
-gateway_ip: ""                              # Gateway IP
-dns_servers: []                             # DNS servers
-# Example:
-# dns_servers:
-#   - "8.8.8.8"
-#   - "8.8.4.4"
+disk_resize_reboot: false                   # Reboot after resize
 
 
 # =============================================================================

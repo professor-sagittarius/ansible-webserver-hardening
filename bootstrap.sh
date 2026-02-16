@@ -48,7 +48,7 @@ echo "     vim inventory_localhost.yml"
 echo
 echo "  3. Run the playbook:"
 echo "     # Localhost deployment:"
-echo "     ansible-playbook -i inventory_localhost.yml playbook_localhost.yml --ask-vault-pass"
+echo "     ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass"
 echo
 echo "     # Remote host deployment:"
-echo "     ansible-playbook -i inventory_remote.yml playbook_remote.yml --ask-vault-pass"
+echo "     ansible-playbook -i inventory_remote.yml playbook.yml --ask-vault-pass"

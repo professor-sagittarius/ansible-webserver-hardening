@@ -1,7 +1,7 @@
-# Hardened remote host setup
-# Follows Nextcloud server hardening guidelines
+# Hardened server setup
+# Works for both localhost and remote hosts via inventory
 
-- name: Hardened Remote Host Setup
+- name: Hardened Server Setup
   hosts: all
   become: true
 
@@ -23,10 +23,6 @@
     # Firewall (geerlingguy.firewall)
     firewall_allowed_tcp_ports:
       - "22"
-      - "80"
-      - "443"
-      - "{{ portainer_http_port }}"
-      - "{{ portainer_https_port }}"
     firewall_allowed_udp_ports: []
     firewall_flush_rules_and_chains: false
     firewall_log_dropped_packets: true
@@ -74,19 +70,15 @@
     dockge_install_dir: "/opt/dockge"
     dockge_stacks_dir: "/opt/stacks"
 
+    # Docker log rotation
+    docker_log_driver: "json-file"
+    docker_log_max_size: "10m"
+    docker_log_max_file: "3"
+
     # Disk resize (local role)
     disk_device: "/dev/sda"
     partition_number: 1
     disk_resize_reboot: false
-
-    # Hostname (local role)
-    vm_hostname: "debian-vm"
-
-    # Network (local role)
-    network_interface: "ens18"
-    static_ip: ""
-    gateway_ip: ""
-    dns_servers: []
 
   roles:
     # Phase 1: User setup (must happen before SSH hardening checks)
@@ -103,11 +95,6 @@
     - role: disk_resize
       when: resize_disk | default(false)
 
-    - role: guest_agent
-
-    - role: hostname
-      when: change_hostname | default(false)
-
     # Phase 4: Docker installation (before firewall)
     - role: docker
 
@@ -119,11 +106,7 @@
     - role: geerlingguy.clamav
 
     - role: robertdebock.cron
-    
+
     - role: devsec.hardening.os_hardening
 
     - role: devsec.hardening.ssh_hardening
-
-    # Phase 6: Network configuration (after firewall)
-    - role: network
-      when: configure_static_ip | default(false)
