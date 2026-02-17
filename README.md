@@ -69,6 +69,7 @@ ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 |------|-------------|
 | `docker` | Install Docker via geerlingguy.docker, plus Portainer/Dockge. Configures daemon.json for log rotation. |
 | `disk_resize` | Expand partition and filesystem to use all available disk space |
+| `guest_agent` | Install QEMU guest agent (for Proxmox/KVM VMs) |
 | `ssh_preflight` | Pre-flight checks to prevent SSH lockout during hardening |
 
 ### External Roles
@@ -88,7 +89,7 @@ ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 
 1. **User setup** - Creates groups and users with sudo/docker access and SSH keys
 2. **SSH lockout prevention check** - Validates safe to harden
-3. **Base system configuration** - Disk resize (if enabled)
+3. **Base system configuration** - Disk resize (if enabled), QEMU guest agent
 4. **Docker installation** - Docker, Compose, daemon.json log rotation, Portainer/Dockge
 5. **Security hardening** - Firewall, fail2ban, ClamAV, cron, OS hardening, SSH hardening
 
@@ -149,6 +150,7 @@ ansible-webserver-hardening/
 └── roles/
     ├── docker/
     ├── disk_resize/
+    ├── guest_agent/
     └── ssh_preflight/
 ```
 

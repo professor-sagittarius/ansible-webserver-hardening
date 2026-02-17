@@ -95,6 +95,8 @@
     - role: disk_resize
       when: resize_disk | default(false)
 
+    - role: guest_agent
+
     # Phase 4: Docker installation (before firewall)
     - role: docker
 

@@ -506,6 +506,13 @@ disk_resize_reboot: false                   # Reboot after resize
 
 
 # =============================================================================
+# Guest Agent Role (local)
+# =============================================================================
+# Installs QEMU guest agent for Proxmox/KVM VMs.
+# No configurable variables.
+
+
+# =============================================================================
 # SSH Preflight Role (local)
 # =============================================================================
 # Pre-flight checks to prevent SSH lockout during hardening.
