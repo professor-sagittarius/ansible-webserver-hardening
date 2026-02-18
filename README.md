@@ -4,21 +4,31 @@ Modular Ansible roles for provisioning and hardening Debian 12 (Bookworm) and De
 
 ## Quick Start
 
+Clone and install dependencies:
+
 ```bash
-# On a fresh Debian machine
 git clone https://github.com/professor-sagittarius/ansible-webserver-hardening.git
 cd ansible-webserver-hardening
 sudo ./bootstrap.sh
+```
 
-# Create the vault directory and file
+Create the vault for passwords:
+
+```bash
 mkdir -p group_vars/all
 ansible-vault create group_vars/all/vault.yml
 # Add: admin_password: "your-secure-password"
+```
 
-# Edit inventory to configure users and settings
+Edit inventory to configure users and settings:
+
+```bash
 vim inventory_localhost.yml
+```
 
-# Run playbook
+Run the playbook:
+
+```bash
 ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 ```
 
