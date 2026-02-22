@@ -204,28 +204,6 @@ fail2ban_jail_configuration: []             # jail.conf settings
 
 
 # =============================================================================
-# geerlingguy.clamav (external)
-# =============================================================================
-# ClamAV antivirus scanning engine.
-# Full documentation: https://github.com/geerlingguy/ansible-role-clamav
-
-# ClamAV daemon
-clamav_daemon_state: started                # ClamAV daemon state
-clamav_daemon_enabled: true                 # Enable ClamAV on boot
-
-# Freshclam (virus definition updater)
-clamav_freshclam_daemon_state: started      # Freshclam daemon state
-clamav_freshclam_daemon_enabled: true       # Enable freshclam on boot
-
-# Daemon configuration changes
-clamav_daemon_configuration_changes: []     # Custom daemon configuration
-# Example:
-# clamav_daemon_configuration_changes:
-#   - regexp: '^.*Example$'
-#     state: absent
-
-
-# =============================================================================
 # robertdebock.cron (external)
 # =============================================================================
 # Cron daemon management.

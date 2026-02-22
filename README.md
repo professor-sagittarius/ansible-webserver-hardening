@@ -92,7 +92,6 @@ ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 | `geerlingguy.docker` | Docker installation (wrapped by local docker role) |
 | `geerlingguy.firewall` | iptables-based firewall |
 | `robertdebock.fail2ban` | Intrusion prevention (brute-force protection) |
-| `geerlingguy.clamav` | Antivirus scanning |
 | `robertdebock.cron` | Cron daemon management |
 
 ## Execution Phases
@@ -101,7 +100,7 @@ ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
 2. **SSH lockout prevention check** - Validates safe to harden
 3. **Base system configuration** - Disk resize (if enabled), QEMU guest agent
 4. **Docker installation** - Docker, Compose, daemon.json log rotation, Portainer/Dockge
-5. **Security hardening** - Firewall, fail2ban, ClamAV, cron, OS hardening, SSH hardening
+5. **Security hardening** - Firewall, fail2ban, cron, OS hardening, SSH hardening
 
 ### Firewall and Docker
 

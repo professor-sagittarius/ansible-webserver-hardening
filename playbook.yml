@@ -52,10 +52,6 @@
         value: "true"
         section: sshd
 
-    # ClamAV (geerlingguy.clamav)
-    clamav_daemon_state: started
-    clamav_daemon_enabled: true
-
     # Docker (local role wrapping geerlingguy.docker)
     docker_edition: 'ce'
     docker_packages_state: present
@@ -109,8 +105,6 @@
     - role: geerlingguy.firewall
 
     - role: robertdebock.fail2ban
-
-    - role: geerlingguy.clamav
 
     - role: robertdebock.cron
 

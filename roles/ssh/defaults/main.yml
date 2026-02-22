@@ -1,3 +1,0 @@
-# No configurable variables - this role only installs SSH and generates host keys.
-# SSH security settings (root login, password auth, etc.) are handled by
-# devsec.hardening.ssh_hardening.

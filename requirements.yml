@@ -11,7 +11,6 @@ collections:
 roles:
   - name: geerlingguy.docker
   - name: geerlingguy.firewall
-  - name: geerlingguy.clamav
   - name: robertdebock.fail2ban
   - name: robertdebock.cron
   - name: robertdebock.users
