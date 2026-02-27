@@ -1,0 +1,22 @@
+# Essential packages installed on every server
+base_packages:
+  - sqlite3
+  - openssl
+  - curl
+  - jq
+  - ca-certificates
+
+# Unattended upgrades - apply security updates automatically
+base_unattended_upgrades_enabled: true
+base_unattended_upgrades_auto_reboot: false
+base_unattended_upgrades_auto_reboot_time: "03:00"
+base_unattended_upgrades_remove_unused_deps: true
+base_unattended_upgrades_mail: ""            # Email address for notifications (empty = disabled)
+
+# Swap file
+base_swap_enabled: false
+base_swap_path: /swapfile
+base_swap_size_mb: 2048
+
+# NTP - verify systemd-timesyncd is running (it is installed by default on Debian 12+)
+base_ntp_servers: []                         # Leave empty to use Debian defaults

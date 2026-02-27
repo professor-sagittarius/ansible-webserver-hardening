@@ -19,3 +19,4 @@
   changed_when: "'nothing to do' not in resize_result.stderr"
   failed_when: resize_result.rc != 0 and 'Nothing to do' not in resize_result.stderr
   when: growpart_result.changed
+  notify: reboot system

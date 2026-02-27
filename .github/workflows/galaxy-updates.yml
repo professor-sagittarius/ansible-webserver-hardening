@@ -1,0 +1,142 @@
+name: Check Ansible Galaxy Updates
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  workflow_dispatch:
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        run: pip install requests pyyaml
+
+      - name: Check for role and collection updates
+        id: check
+        run: |
+          python3 - << 'EOF'
+          import json, os, re, subprocess, sys
+          import requests
+          import yaml
+
+          with open("requirements.yml") as f:
+              req = yaml.safe_load(f)
+
+          updates = []
+
+          # Check roles via Galaxy v1 API
+          for role in req.get("roles", []):
+              name = role["name"]
+              pinned = role.get("version", "")
+              namespace, rolename = name.split(".")
+              try:
+                  r = requests.get(
+                      f"https://galaxy.ansible.com/api/v1/roles/",
+                      params={"owner__username": namespace, "name": rolename, "format": "json"},
+                      timeout=10,
+                  )
+                  r.raise_for_status()
+                  data = r.json()
+                  versions = data["results"][0]["summary_fields"]["versions"]
+                  latest = versions[0]["name"]
+                  if pinned != latest:
+                      updates.append({"type": "role", "name": name, "from": pinned, "to": latest})
+                      print(f"ROLE UPDATE: {name} {pinned} -> {latest}")
+                  else:
+                      print(f"role up-to-date: {name} {pinned}")
+              except Exception as e:
+                  print(f"WARNING: could not check {name}: {e}", file=sys.stderr)
+
+          # Check collections via Galaxy v3 API
+          for col in req.get("collections", []):
+              name = col["name"]
+              pinned = col.get("version", "")
+              # Skip range constraints - only check exact pins
+              if any(c in pinned for c in [">=", "<=", ">", "<", "!="]):
+                  print(f"collection skipped (range constraint): {name} {pinned}")
+                  continue
+              parts = name.split(".")
+              if len(parts) != 2:
+                  continue
+              namespace, colname = parts
+              try:
+                  r = requests.get(
+                      f"https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/index/{namespace}/{colname}/",
+                      timeout=10,
+                  )
+                  r.raise_for_status()
+                  data = r.json()
+                  latest = data["highest_version"]["version"]
+                  if pinned != latest:
+                      updates.append({"type": "collection", "name": name, "from": pinned, "to": latest})
+                      print(f"COLLECTION UPDATE: {name} {pinned} -> {latest}")
+                  else:
+                      print(f"collection up-to-date: {name} {pinned}")
+              except Exception as e:
+                  print(f"WARNING: could not check {name}: {e}", file=sys.stderr)
+
+          if not updates:
+              print("All dependencies are up to date.")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("updates=false\n")
+              sys.exit(0)
+
+          # Apply updates to requirements.yml
+          with open("requirements.yml") as f:
+              content = f.read()
+
+          for u in updates:
+              content = re.sub(
+                  rf'(- name: {re.escape(u["name"])}\n\s+version: "){re.escape(u["from"])}"',
+                  rf'\g<1>{u["to"]}"',
+                  content,
+              )
+
+          with open("requirements.yml", "w") as f:
+              f.write(content)
+
+          summary = "\n".join(f"- `{u['name']}`: {u['from']} -> {u['to']}" for u in updates)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("updates=true\n")
+              f.write(f"summary<<EOF_SUMMARY\n{summary}\nEOF_SUMMARY\n")
+
+          EOF
+
+      - name: Create pull request with updates
+        if: steps.check.outputs.updates == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="deps/ansible-galaxy-updates-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add requirements.yml
+          git commit -m "chore: update Ansible Galaxy dependency versions"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Update Ansible Galaxy dependency versions" \
+            --body "$(cat <<'PREOF'
+          ## Ansible Galaxy Dependency Updates
+
+          The following roles/collections have newer versions available:
+
+          ${{ steps.check.outputs.summary }}
+
+          ### Before merging
+
+          - Review the changelogs for each updated dependency
+          - Test the playbook against a fresh VM before merging
+          - Pay special attention to major version bumps in `devsec.hardening` (breaking changes possible)
+
+          _Generated by the [galaxy-updates workflow](.github/workflows/galaxy-updates.yml)_
+          PREOF
+          )" \
+            --base main

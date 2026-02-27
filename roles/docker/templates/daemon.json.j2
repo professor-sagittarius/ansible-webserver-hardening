@@ -3,5 +3,8 @@
   "log-opts": {
     "max-size": "{{ docker_log_max_size }}",
     "max-file": "{{ docker_log_max_file }}"
-  }
+  },
+  "live-restore": true,
+  "no-new-privileges": true,
+  "userland-proxy": false
 }

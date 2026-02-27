@@ -1,0 +1,89 @@
+- name: Install essential packages
+  ansible.builtin.apt:
+    name: "{{ base_packages + ['unattended-upgrades', 'apt-listchanges'] }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Configure unattended-upgrades (50unattended-upgrades)
+  ansible.builtin.template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: '0644'
+  when: base_unattended_upgrades_enabled | bool
+
+- name: Configure unattended-upgrades periodic run (20auto-upgrades)
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Download-Upgradeable-Packages "1";
+      APT::Periodic::AutocleanInterval "7";
+      APT::Periodic::Unattended-Upgrade "1";
+  when: base_unattended_upgrades_enabled | bool
+
+- name: Ensure unattended-upgrades service is enabled and running
+  ansible.builtin.service:
+    name: unattended-upgrades
+    state: started
+    enabled: true
+  when: base_unattended_upgrades_enabled | bool
+
+- name: Ensure systemd-timesyncd is enabled and running
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
+
+- name: Configure NTP servers for systemd-timesyncd
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/timesyncd.conf
+    regexp: '^#?NTP='
+    line: "NTP={{ base_ntp_servers | join(' ') }}"
+  when: base_ntp_servers | length > 0
+  notify: restart timesyncd
+
+- name: Create swap file
+  ansible.builtin.command:
+    cmd: "dd if=/dev/zero of={{ base_swap_path }} bs=1M count={{ base_swap_size_mb }}"
+    creates: "{{ base_swap_path }}"
+  when: base_swap_enabled | bool
+
+- name: Set swap file permissions
+  ansible.builtin.file:
+    path: "{{ base_swap_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  when: base_swap_enabled | bool
+
+- name: Format swap file
+  ansible.builtin.command:
+    cmd: "mkswap {{ base_swap_path }}"
+  register: mkswap_result
+  changed_when: mkswap_result.rc == 0
+  when:
+    - base_swap_enabled | bool
+    - ansible_swaptotal_mb == 0
+
+- name: Enable swap file
+  ansible.builtin.command:
+    cmd: "swapon {{ base_swap_path }}"
+  register: swapon_result
+  changed_when: swapon_result.rc == 0
+  failed_when: swapon_result.rc != 0 and 'already' not in swapon_result.stderr
+  when:
+    - base_swap_enabled | bool
+    - ansible_swaptotal_mb == 0
+
+- name: Add swap to /etc/fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ base_swap_path }} none swap sw 0 0"
+    state: present
+  when: base_swap_enabled | bool

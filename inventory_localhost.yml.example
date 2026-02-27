@@ -1,5 +1,8 @@
 # Inventory for localhost deployment
-# Usage: ansible-playbook -i inventory_localhost.yml playbook.yml
+# Usage: cp inventory_localhost.yml.example inventory_localhost.yml
+#        ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
+#
+# inventory_localhost.yml is gitignored - edit your local copy, never commit it.
 
 all:
   hosts:
@@ -17,7 +20,7 @@ all:
             - docker
           password: "{{ admin_password | password_hash('sha512') }}"
           authorized_keys:
-            - "ssh-ed25519 AAAA..." # Replace with your public key
+            - "ssh-ed25519 AAAA... your-key-here"
           expires: -1
 
       # Disk configuration
@@ -25,6 +28,9 @@ all:
       disk_device: "/dev/sda"
       partition_number: 1
 
-      # SSH hardening (set to 'yes'/true for initial setup, 'no'/false for hardened)
+      # SSH hardening
       ssh_permit_root_login: 'no'
       ssh_password_authentication: false
+
+      # LAN CIDR for fail2ban ignore list (adjust to your network)
+      # fail2ban_ignoreips: "127.0.0.1/8 ::1 192.168.1.0/24"

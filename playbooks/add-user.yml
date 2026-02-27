@@ -1,0 +1,37 @@
+# Add a user to an already-provisioned server
+# Usage:
+#   ansible-playbook -i inventory_localhost.yml playbooks/add-user.yml --ask-vault-pass \
+#     -e "new_user=alice new_user_ssh_key='ssh-ed25519 AAAA...'"
+#
+# Or define the user fully in inventory and run:
+#   ansible-playbook -i inventory_localhost.yml playbooks/add-user.yml --ask-vault-pass
+
+- name: Add user to provisioned server
+  hosts: all
+  become: true
+
+  vars:
+    # Override these via -e or inventory
+    new_user: ""
+    new_user_ssh_key: ""
+    new_user_groups:
+      - sudo
+      - docker
+    new_user_password: "{{ admin_password | password_hash('sha512') }}"
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.fail:
+        msg: "new_user must be set. Pass -e new_user=username"
+      when: new_user == ""
+
+  roles:
+    - role: robertdebock.users
+      vars:
+        users_groups: "{{ users_group_list | default([]) }}"
+        users:
+          - name: "{{ new_user }}"
+            groups: "{{ new_user_groups }}"
+            password: "{{ new_user_password }}"
+            authorized_keys: "{{ [new_user_ssh_key] if new_user_ssh_key else [] }}"
+            expires: -1

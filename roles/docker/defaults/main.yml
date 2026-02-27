@@ -12,16 +12,23 @@ docker_users: []
 install_docker_python: true
 
 # Portainer settings
+# WARNING: Portainer mounts /var/run/docker.sock and is root-equivalent access.
+# Restrict portainer_bind_address to your LAN IP or 127.0.0.1 to limit exposure.
+# See README for details.
 install_portainer: false
+portainer_version: "2.21.5"
 portainer_http_port: 8000
 portainer_https_port: 9443
 portainer_data_dir: "/opt/portainer"
+portainer_bind_address: "0.0.0.0"
 
 # Dockge settings
+# WARNING: Dockge also mounts /var/run/docker.sock. Restrict dockge_bind_address similarly.
 install_dockge: false
 dockge_port: 5001
 dockge_install_dir: "/opt/dockge"
 dockge_stacks_dir: "/opt/stacks"
+dockge_bind_address: "0.0.0.0"
 
 # Docker daemon log rotation
 docker_log_driver: "json-file"

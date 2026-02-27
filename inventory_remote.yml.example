@@ -1,0 +1,30 @@
+# Inventory for remote host deployment
+# Usage: cp inventory_remote.yml.example inventory_remote.yml
+#        ansible-playbook -i inventory_remote.yml playbook.yml --ask-vault-pass
+#
+# inventory_remote.yml is gitignored - edit your local copy, never commit it.
+
+all:
+  vars:
+    ansible_user: root
+
+    # SSH hardening (set to 'yes'/true for initial setup, 'no'/false for hardened)
+    ssh_permit_root_login: 'no'
+    ssh_password_authentication: false
+
+  hosts:
+    # Add your remote hosts here. Example:
+    # server-01:
+    #   ansible_host: 192.168.1.101
+    #   resize_disk: true
+    #   users_group_list:
+    #     - name: docker
+    #   users_user_list:
+    #     - name: admin
+    #       groups:
+    #         - sudo
+    #         - docker
+    #       password: "{{ admin_password | password_hash('sha512') }}"
+    #       authorized_keys:
+    #         - "ssh-ed25519 AAAA... your-key-here"
+    #       expires: -1

@@ -6,11 +6,16 @@ collections:
   - name: ansible.posix
     version: ">=1.0.0"
   - name: devsec.hardening
-    version: ">=8.0.0"
+    version: "10.5.0"
 
 roles:
   - name: geerlingguy.docker
+    version: "8.0.0"
   - name: geerlingguy.firewall
+    version: "2.7.0"
   - name: robertdebock.fail2ban
+    version: "5.0.6"
   - name: robertdebock.cron
+    version: "2.2.8"
   - name: robertdebock.users
+    version: "6.1.8"

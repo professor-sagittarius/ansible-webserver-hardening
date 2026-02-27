@@ -31,15 +31,17 @@ credentials*
 secrets*
 group_vars/all/vault.yml
 inventory_custom.yml
+# Live inventories contain SSH keys and host-specific config - use *.example templates
+inventory_localhost.yml
+inventory_remote.yml
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Ansible Galaxy downloaded roles (optional - uncomment to ignore)
-# roles/geerlingguy.*/
-# roles/robertdebock.*/
-# roles/devsec.*/
+# Ansible Galaxy downloaded roles (fetched by bootstrap.sh, not tracked)
+roles/geerlingguy.*/
+roles/robertdebock.*/
 
 # Logs
 *.log

@@ -98,16 +98,24 @@ docker_daemon_options: {}                   # Docker daemon configuration
 install_docker_python: true
 
 # Portainer (container management UI)
-install_portainer: true
+# WARNING: Portainer mounts /var/run/docker.sock (root-equivalent access).
+# Default is false. If enabled, set portainer_bind_address to your LAN IP
+# or 127.0.0.1 to avoid exposing the UI beyond your intended network.
+install_portainer: false
+portainer_version: "2.21.5"                 # Pinned version - update deliberately
 portainer_http_port: 8000                   # Portainer HTTP port
 portainer_https_port: 9443                  # Portainer HTTPS port
 portainer_data_dir: "/opt/portainer"        # Portainer data directory
+portainer_bind_address: "0.0.0.0"          # Bind address - restrict to LAN IP or 127.0.0.1
 
 # Dockge (alternative container management UI)
+# WARNING: Dockge also mounts /var/run/docker.sock (root-equivalent access).
+# Default is false. If enabled, set dockge_bind_address to your LAN IP or 127.0.0.1.
 install_dockge: false
 dockge_port: 5001                           # Dockge web UI port
 dockge_install_dir: "/opt/dockge"           # Dockge installation directory
 dockge_stacks_dir: "/opt/stacks"            # Dockge stacks directory
+dockge_bind_address: "0.0.0.0"             # Bind address - restrict to LAN IP or 127.0.0.1
 
 # Docker daemon log rotation
 docker_log_driver: "json-file"              # Docker log driver
@@ -473,6 +481,35 @@ os_netrc_whitelist_user: []                 # Users to keep .netrc for
 
 
 # =============================================================================
+# Base Role (local)
+# =============================================================================
+# Essential packages, unattended security updates, swap file, NTP verification.
+
+base_packages:                              # Packages installed on every server
+  - sqlite3
+  - openssl
+  - curl
+  - jq
+  - ca-certificates
+
+base_unattended_upgrades_enabled: true      # Apply security updates automatically
+base_unattended_upgrades_auto_reboot: false # Reboot automatically if upgrade requires it
+base_unattended_upgrades_auto_reboot_time: "03:00"  # Time to reboot (if enabled)
+base_unattended_upgrades_remove_unused_deps: true   # Remove unused deps after upgrade
+base_unattended_upgrades_mail: ""           # Email for notifications (empty = disabled)
+
+base_swap_enabled: false                    # Create a swap file
+base_swap_path: /swapfile                   # Swap file path
+base_swap_size_mb: 2048                     # Swap file size in MB
+
+base_ntp_servers: []                        # NTP servers (empty = Debian defaults)
+# Example:
+# base_ntp_servers:
+#   - 0.debian.pool.ntp.org
+#   - 1.debian.pool.ntp.org
+
+
+# =============================================================================
 # Disk Resize Role (local)
 # =============================================================================
 # Expands partition and filesystem to use all available disk space.
@@ -480,7 +517,7 @@ os_netrc_whitelist_user: []                 # Users to keep .netrc for
 resize_disk: false                          # Enable disk resize
 disk_device: "/dev/sda"                     # Device to resize
 partition_number: 1                         # Partition number
-disk_resize_reboot: false                   # Reboot after resize
+disk_resize_reboot: false                   # Reboot after resize (triggers handler)
 
 
 # =============================================================================
@@ -495,4 +532,6 @@ disk_resize_reboot: false                   # Reboot after resize
 # =============================================================================
 # Pre-flight checks to prevent SSH lockout during hardening.
 # Uses ssh_permit_root_login and ssh_password_authentication from ssh_hardening.
+# Note: ssh_password_authentication is mapped to ssh_server_password_login in
+# playbook.yml so both ssh_preflight and devsec.hardening.ssh_hardening stay in sync.
 # No additional configurable variables.
