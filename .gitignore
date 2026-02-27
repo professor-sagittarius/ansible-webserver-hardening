@@ -32,8 +32,8 @@ secrets*
 group_vars/all/vault.yml
 inventory_custom.yml
 # Live inventories contain SSH keys and host-specific config - use *.example templates
-inventory_localhost.yml
-inventory_remote.yml
+inventories/localhost.yml
+inventories/remote.yml
 
 # OS files
 .DS_Store

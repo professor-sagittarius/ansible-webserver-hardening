@@ -1,7 +1,7 @@
 # Apply all available package updates and report if a reboot is required
 # Usage:
-#   ansible-playbook -i inventory_localhost.yml playbooks/update-system.yml
-#   ansible-playbook -i inventory_localhost.yml playbooks/update-system.yml -e reboot_if_required=true
+#   ansible-playbook -i inventories/localhost.yml playbooks/update-system.yml
+#   ansible-playbook -i inventories/localhost.yml playbooks/update-system.yml -e reboot_if_required=true
 
 - name: Update system packages
   hosts: all

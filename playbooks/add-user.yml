@@ -1,10 +1,10 @@
 # Add a user to an already-provisioned server
 # Usage:
-#   ansible-playbook -i inventory_localhost.yml playbooks/add-user.yml --ask-vault-pass \
+#   ansible-playbook -i inventories/localhost.yml playbooks/add-user.yml --ask-vault-pass \
 #     -e "new_user=alice new_user_ssh_key='ssh-ed25519 AAAA...'"
 #
 # Or define the user fully in inventory and run:
-#   ansible-playbook -i inventory_localhost.yml playbooks/add-user.yml --ask-vault-pass
+#   ansible-playbook -i inventories/localhost.yml playbooks/add-user.yml --ask-vault-pass
 
 - name: Add user to provisioned server
   hosts: all

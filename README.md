@@ -23,16 +23,16 @@ ansible-vault create group_vars/all/vault.yml
 Create your local inventory from the example template:
 
 ```bash
-cp inventory_localhost.yml.example inventory_localhost.yml
-vim inventory_localhost.yml
+cp inventories/localhost.yml.example inventories/localhost.yml
+vim inventories/localhost.yml
 ```
 
-> `inventory_localhost.yml` is gitignored - it contains your SSH keys and host-specific settings. Never commit it.
+> `inventories/localhost.yml` is gitignored - it contains your SSH keys and host-specific settings. Never commit it.
 
 Run the playbook:
 
 ```bash
-ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
+ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass
 ```
 
 ## Requirements
@@ -69,7 +69,7 @@ admin_password: "your-secure-password-here"
 Always run playbooks with `--ask-vault-pass`:
 
 ```bash
-ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
+ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass
 ```
 
 **Note:** The vault file is not included in the repository (it's in `.gitignore`). You must create it after cloning.
@@ -147,22 +147,22 @@ See `all_variables.yml` for a complete reference of all configurable variables.
 
 ```bash
 ansible-vault edit group_vars/all/vault.yml      # Set admin_password
-vim inventory_localhost.yml                       # Configure settings
-ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass
+vim inventories/localhost.yml                       # Configure settings
+ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass
 ```
 
 ### Remote Host Deployment
 
 ```bash
-cp inventory_remote.yml.example inventory_remote.yml
-vim inventory_remote.yml                          # Add your hosts and user config
-ansible-playbook -i inventory_remote.yml playbook.yml --ask-vault-pass
+cp inventories/remote.yml.example inventories/remote.yml
+vim inventories/remote.yml                          # Add your hosts and user config
+ansible-playbook -i inventories/remote.yml playbook.yml --ask-vault-pass
 ```
 
 ### Dry Run (Check Mode)
 
 ```bash
-ansible-playbook -i inventory_localhost.yml playbook.yml --check --ask-vault-pass
+ansible-playbook -i inventories/localhost.yml playbook.yml --check --ask-vault-pass
 ```
 
 ## Post-Provisioning Playbooks
@@ -178,20 +178,20 @@ Targeted playbooks for common operational tasks - no need to re-run the full pla
 
 ```bash
 # Add a user
-ansible-playbook -i inventory_localhost.yml playbooks/add-user.yml --ask-vault-pass \
+ansible-playbook -i inventories/localhost.yml playbooks/add-user.yml --ask-vault-pass \
   -e "new_user=alice new_user_ssh_key='ssh-ed25519 AAAA...'"
 
 # Resize disk after expanding it in Proxmox
-ansible-playbook -i inventory_localhost.yml playbooks/resize-disk.yml
+ansible-playbook -i inventories/localhost.yml playbooks/resize-disk.yml
 
 # Update packages (add -e reboot_if_required=true to auto-reboot if needed)
-ansible-playbook -i inventory_localhost.yml playbooks/update-system.yml
+ansible-playbook -i inventories/localhost.yml playbooks/update-system.yml
 
 # Check for security configuration drift without making changes
-ansible-playbook -i inventory_localhost.yml playbooks/security-compliance.yml --check --ask-vault-pass
+ansible-playbook -i inventories/localhost.yml playbooks/security-compliance.yml --check --ask-vault-pass
 
 # Re-enforce security hardening after manual changes
-ansible-playbook -i inventory_localhost.yml playbooks/security-compliance.yml --ask-vault-pass
+ansible-playbook -i inventories/localhost.yml playbooks/security-compliance.yml --ask-vault-pass
 ```
 
 ## Dependency Updates
@@ -214,10 +214,10 @@ ansible-webserver-hardening/
 ├── group_vars/
 │   └── all/
 │       └── vault.yml                   # Encrypted passwords (gitignored)
-├── inventory_localhost.yml             # Gitignored - copy from *.example
-├── inventory_localhost.yml.example     # Template - copy and edit
-├── inventory_remote.yml                # Gitignored - copy from *.example
-├── inventory_remote.yml.example        # Template - copy and edit
+├── inventories/localhost.yml          # Gitignored - copy from *.example
+├── inventories/localhost.yml.example     # Template - copy and edit
+├── inventories/remote.yml             # Gitignored - copy from *.example
+├── inventories/remote.yml.example        # Template - copy and edit
 ├── playbook.yml                        # Main provisioning playbook
 ├── playbooks/
 │   ├── add-user.yml                    # Add a user post-provisioning

@@ -44,11 +44,13 @@ echo "     ansible-vault create group_vars/all/vault.yml"
 echo "     # Add: admin_password: \"your-secure-password\""
 echo
 echo "  2. Edit inventory to configure users and settings:"
-echo "     vim inventory_localhost.yml"
+echo "     cp inventories/localhost.yml.example inventories/localhost.yml"
+echo "     vim inventories/localhost.yml"
 echo
 echo "  3. Run the playbook:"
 echo "     # Localhost deployment:"
-echo "     ansible-playbook -i inventory_localhost.yml playbook.yml --ask-vault-pass"
+echo "     ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass"
 echo
 echo "     # Remote host deployment:"
-echo "     ansible-playbook -i inventory_remote.yml playbook.yml --ask-vault-pass"
+echo "     cp inventories/remote.yml.example inventories/remote.yml"
+echo "     ansible-playbook -i inventories/remote.yml playbook.yml --ask-vault-pass"

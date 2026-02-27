@@ -1,10 +1,10 @@
 # Re-apply (or check) security hardening roles only
 #
 # Use --check for drift detection without making changes:
-#   ansible-playbook -i inventory_localhost.yml playbooks/security-compliance.yml --check --ask-vault-pass
+#   ansible-playbook -i inventories/localhost.yml playbooks/security-compliance.yml --check --ask-vault-pass
 #
 # Use without --check to re-enforce compliance after manual changes:
-#   ansible-playbook -i inventory_localhost.yml playbooks/security-compliance.yml --ask-vault-pass
+#   ansible-playbook -i inventories/localhost.yml playbooks/security-compliance.yml --ask-vault-pass
 
 - name: Security Compliance - DevSec Hardening
   hosts: all

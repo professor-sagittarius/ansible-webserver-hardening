@@ -1,8 +1,8 @@
 # Expand the partition and filesystem after increasing a Proxmox disk
 # Run this after resizing the disk in Proxmox - no need to re-run the full playbook.
 # Usage:
-#   ansible-playbook -i inventory_localhost.yml playbooks/resize-disk.yml
-#   ansible-playbook -i inventory_localhost.yml playbooks/resize-disk.yml -e disk_resize_reboot=true
+#   ansible-playbook -i inventories/localhost.yml playbooks/resize-disk.yml
+#   ansible-playbook -i inventories/localhost.yml playbooks/resize-disk.yml -e disk_resize_reboot=true
 
 - name: Resize disk partition and filesystem
   hosts: all
