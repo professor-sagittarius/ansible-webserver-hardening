@@ -58,7 +58,7 @@
         Safe to disable root login: {{ safe_to_disable_root }}
         Safe to disable password auth: {{ safe_to_disable_passwords }}
 
-- name: FAIL - Cannot disable root login without sudo user with SSH keys
+- name: Verify SSH access is available before disabling root login
   ansible.builtin.fail:
     msg: |
       LOCKOUT PREVENTION: Cannot disable root login!
@@ -73,7 +73,7 @@
     - ssh_permit_root_login | default('no') == 'no'
     - not safe_to_disable_root
 
-- name: FAIL - Cannot disable password auth without any SSH keys
+- name: Verify SSH keys are present before disabling password authentication
   ansible.builtin.fail:
     msg: |
       LOCKOUT PREVENTION: Cannot disable password authentication!
@@ -86,12 +86,12 @@
     - not ssh_password_authentication | default(false)
     - not safe_to_disable_passwords
 
-- name: WARN - Running with root login enabled (less secure)
+- name: Report root login status
   ansible.builtin.debug:
     msg: "WARNING: Root login is enabled. Consider creating a sudo user with SSH keys and disabling root login."
   when: ssh_permit_root_login | default('no') == 'yes'
 
-- name: WARN - Running with password auth enabled (less secure)
+- name: Report password authentication status
   ansible.builtin.debug:
     msg: "WARNING: Password authentication is enabled. Consider adding SSH keys and disabling password auth."
   when: ssh_password_authentication | default(false)
