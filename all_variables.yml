@@ -535,3 +535,22 @@ disk_resize_reboot: false                   # Reboot after resize (triggers hand
 # Note: ssh_password_authentication is mapped to ssh_server_password_login in
 # playbook.yml so both ssh_preflight and devsec.hardening.ssh_hardening stay in sync.
 # No additional configurable variables.
+
+
+# =============================================================================
+# Netbird Role (local)
+# =============================================================================
+# Installs and registers the Netbird WireGuard VPN client.
+# Wraps dominion_solutions.netbird.netbird collection role.
+
+install_netbird: false                      # Enable Netbird installation
+
+# Setup key for node registration. Must be defined in your vault:
+#   ansible-vault edit group_vars/all/vault.yml
+# Add: vault_netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# For per-host keys, define vault_netbird_setup_key in host_vars/<name>/vault.yml instead.
+netbird_setup_key: "{{ vault_netbird_setup_key }}"
+
+netbird_register: true                      # Register node on install (set false to install only)
+
+# netbird_mgmt_url: "https://api.netbird.io:443"  # Override for self-hosted management server
