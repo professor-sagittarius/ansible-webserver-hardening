@@ -62,6 +62,7 @@ ansible-vault edit group_vars/all/vault.yml
 
 ```yaml
 admin_password: "your-secure-password-here"
+vault_netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # if using Netbird
 ```
 
 ### Using the vault
@@ -85,6 +86,7 @@ ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass
 | `disk_resize` | Expand partition and filesystem to use all available disk space |
 | `guest_agent` | Install QEMU guest agent (for Proxmox/KVM VMs) |
 | `ssh_preflight` | Pre-flight checks to prevent SSH lockout during hardening |
+| `netbird` | Install and register Netbird WireGuard VPN client (optional, disabled by default) |
 
 ### External Roles
 
@@ -104,7 +106,7 @@ ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass
 2. **SSH lockout prevention check** - Validates safe to harden
 3. **Base system configuration** - Disk resize (if enabled), QEMU guest agent, essential packages, unattended upgrades
 4. **Docker installation** - Docker, Compose, daemon.json (log rotation, live-restore, no-new-privileges), optional Portainer/Dockge
-5. **Security hardening** - Firewall, fail2ban, cron, OS hardening, SSH hardening
+5. **Security hardening** - Firewall (opens UDP 51820 if Netbird enabled), Netbird VPN registration (optional), fail2ban, cron, OS hardening, SSH hardening
 
 ### Firewall and Docker
 
@@ -127,6 +129,36 @@ Both are **disabled by default** (`install_portainer: false`, `install_dockge: f
    ```
 2. **Do not expose ports 8000, 9443 (Portainer) or 5001 (Dockge) to the internet.** With Cloudflare Tunnel handling external traffic, these ports should never be publicly reachable.
 3. **Keep the image pinned** (`portainer_version`) and update it deliberately rather than using `:latest`.
+
+### Netbird VPN
+
+Netbird provides a WireGuard-based overlay VPN. When enabled (`install_netbird: true`), this
+playbook installs the Netbird client and registers the device with the management server using
+a setup key from your vault.
+
+The firewall is automatically configured to open UDP 51820 (WireGuard) when Netbird is enabled.
+
+**Setup:**
+
+1. Add your setup key to the vault:
+
+   ```bash
+   ansible-vault edit group_vars/all/vault.yml
+   # Add: vault_netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ```
+
+   For per-host keys, create `host_vars/<hostname>/vault.yml` instead with the same variable.
+
+2. Enable Netbird in your inventory:
+
+   ```yaml
+   install_netbird: true
+   ```
+
+3. Run the playbook as normal with `--ask-vault-pass`.
+
+Setup keys can be created in the Netbird dashboard under Settings > Setup Keys. Reusable keys
+work well for groups of servers; one-time keys provide stronger isolation per host.
 
 ### Lockout Prevention
 
@@ -229,6 +261,7 @@ ansible-webserver-hardening/
     ├── docker/
     ├── disk_resize/
     ├── guest_agent/
+    ├── netbird/                        # Netbird WireGuard VPN client (optional)
     └── ssh_preflight/
 ```
 
@@ -268,3 +301,8 @@ External roles (`geerlingguy.*`, `robertdebock.*`) are fetched by `bootstrap.sh`
 **Portainer/Dockge not accessible from LAN:**
 - Check `portainer_bind_address` / `dockge_bind_address` - if set to `127.0.0.1`, access requires an SSH tunnel
 - To access from LAN, set the bind address to the server's LAN IP in inventory
+
+**Netbird registration fails:**
+- Confirm `vault_netbird_setup_key` is set in `group_vars/all/vault.yml` or the relevant `host_vars/` file
+- Verify the setup key is valid and not expired in the Netbird dashboard
+- Check that the server has outbound access to `api.netbird.io:443`
