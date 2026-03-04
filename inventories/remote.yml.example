@@ -28,3 +28,7 @@ all:
     #       authorized_keys:
     #         - "ssh-ed25519 AAAA... your-key-here"
     #       expires: -1
+    #
+    #   # Netbird VPN (optional)
+    #   # install_netbird: true
+    #   # Per-host key: define vault_netbird_setup_key in host_vars/server-01/vault.yml
