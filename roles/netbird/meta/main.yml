@@ -1,0 +1,6 @@
+galaxy_info:
+  role_name: netbird
+  author: local
+  description: Installs and registers the Netbird WireGuard VPN client
+  min_ansible_version: "2.10"
+dependencies: []

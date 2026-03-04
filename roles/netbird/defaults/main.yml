@@ -1,0 +1,16 @@
+# Netbird VPN client installation and registration.
+# Set install_netbird: true in inventory to enable.
+
+install_netbird: false
+
+# Setup key for registering this node with the Netbird management server.
+# Define vault_netbird_setup_key in group_vars/all/vault.yml (or host_vars/<name>/vault.yml
+# for per-host keys). Run: ansible-vault edit group_vars/all/vault.yml
+netbird_setup_key: "{{ vault_netbird_setup_key }}"
+
+# Set to false to install Netbird without registering to the management server.
+netbird_register: true
+
+# Management server URL. Default is the public netbird.io cloud service.
+# Override only if using a self-hosted management server.
+# netbird_mgmt_url: "https://api.netbird.io:443"
