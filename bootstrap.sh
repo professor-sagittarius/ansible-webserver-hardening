@@ -2,26 +2,31 @@
 # ansible-webserver-hardening bootstrap script
 # Installs Ansible and required collections/roles on fresh Debian installations
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ ! -f "$SCRIPT_DIR/requirements.yml" ]]; then
+	echo "Error: requirements.yml not found in $SCRIPT_DIR"
+	exit 1
+fi
 
 echo "=== Ansible Bootstrap Script ==="
 echo
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
-    echo "This script must be run as root"
-    exit 1
+	echo "This script must be run as root"
+	exit 1
 fi
 
 # Install Ansible
-if ! command -v ansible &> /dev/null; then
-    echo "Installing Ansible..."
-    apt-get update
-    apt-get install -y ansible python3-pip
+if ! command -v ansible &>/dev/null; then
+	echo "Installing Ansible..."
+	apt-get update
+	apt-get install -y ansible python3-pip
 else
-    echo "Ansible already installed: $(ansible --version | head -1)"
+	echo "Ansible already installed: $(ansible --version | head -1)"
 fi
 
 # Install required collections and roles
