@@ -5,6 +5,13 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Detect partition device path
+  ansible.builtin.set_fact:
+    _partition_device: >-
+      {{ disk_device }}p{{ partition_number }}
+      if disk_device is match('.*(nvme|mmcblk).*')
+      else disk_device ~ partition_number
+
 - name: Grow partition to use all available space
   ansible.builtin.command:
     cmd: "growpart {{ disk_device }} {{ partition_number }}"
@@ -12,11 +19,40 @@
   changed_when: "'CHANGED' in growpart_result.stdout"
   failed_when: growpart_result.rc != 0 and 'NOCHANGE' not in growpart_result.stdout
 
-- name: Resize filesystem
+- name: Detect filesystem type on partition
   ansible.builtin.command:
-    cmd: "resize2fs {{ disk_device }}{{ partition_number }}"
+    cmd: "blkid -s TYPE -o value {{ _partition_device }}"
+  register: _fs_type_result
+  changed_when: false
+  when: growpart_result.changed
+
+- name: Resize ext2/ext3/ext4 filesystem
+  ansible.builtin.command:
+    cmd: "resize2fs {{ _partition_device }}"
   register: resize_result
   changed_when: "'nothing to do' not in resize_result.stderr"
   failed_when: resize_result.rc != 0 and 'Nothing to do' not in resize_result.stderr
-  when: growpart_result.changed
+  when:
+    - growpart_result.changed
+    - _fs_type_result.stdout | default('') in ['ext2', 'ext3', 'ext4']
   notify: reboot system
+
+- name: Resize XFS filesystem
+  ansible.builtin.command:
+    cmd: "xfs_growfs {{ _partition_device }}"
+  register: xfs_resize_result
+  changed_when: true
+  when:
+    - growpart_result.changed
+    - _fs_type_result.stdout | default('') == 'xfs'
+  notify: reboot system
+
+- name: Fail if filesystem type is unsupported
+  ansible.builtin.fail:
+    msg: >
+      Unsupported filesystem type '{{ _fs_type_result.stdout | default('unknown') }}'
+      on {{ _partition_device }}. Supported types: ext2, ext3, ext4, xfs.
+      Resize manually or extend this role.
+  when:
+    - growpart_result.changed
+    - _fs_type_result.stdout | default('') not in ['ext2', 'ext3', 'ext4', 'xfs', '']
