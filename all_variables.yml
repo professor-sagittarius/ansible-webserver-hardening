@@ -167,6 +167,36 @@ firewall_disable_ufw: false                 # Disable ufw
 
 
 # =============================================================================
+# DOCKER-USER Chain Rules (local, via playbook tasks)
+# =============================================================================
+# Restricts which sources can reach Docker-published ports on the external interface.
+# Docker publishes ports by inserting rules into the FORWARD chain, bypassing the
+# INPUT chain that geerlingguy.firewall manages. DOCKER-USER chain rules run before
+# Docker's own FORWARD rules and allow per-interface access control.
+#
+# Netbird VPN traffic (interface wt0) is UNAFFECTED by these rules - they only
+# match packets arriving on docker_user_external_interface.
+#
+# Topology guidance:
+#   Homelab (eth0 = LAN, behind NAT): optional - mainly protects against unintended
+#     LAN access. Set docker_user_allowed_sources to your LAN CIDR.
+#   VPS (eth0 = public IP): important - blocks internet access to Docker ports.
+#     Leave docker_user_allowed_sources empty; use Netbird for admin access.
+#
+# When enabled, the rules applied are (in order):
+#   ACCEPT established/related on external interface (return traffic)
+#   ACCEPT each source in docker_user_allowed_sources on external interface
+#   DROP all other traffic on external interface
+
+docker_user_rules_enabled: false            # Set true to enable DOCKER-USER rules
+docker_user_external_interface: "eth0"      # Interface to restrict (WireGuard/Netbird interface is separate and unaffected)
+docker_user_allowed_sources: []             # CIDRs to allow (e.g., ["192.168.1.0/24"])
+# Example for homelab:
+# docker_user_allowed_sources:
+#   - "192.168.1.0/24"
+
+
+# =============================================================================
 # robertdebock.fail2ban (external)
 # =============================================================================
 # Intrusion prevention (brute-force protection).

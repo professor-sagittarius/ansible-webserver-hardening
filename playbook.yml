@@ -27,6 +27,11 @@
     firewall_flush_rules_and_chains: false
     firewall_log_dropped_packets: true
 
+    # DOCKER-USER chain (see all_variables.yml for topology guidance)
+    docker_user_rules_enabled: false
+    docker_user_external_interface: "eth0"
+    docker_user_allowed_sources: []
+
     # OS hardening (devsec.hardening.os_hardening)
     sysctl_overwrite:
       net.ipv4.ip_forward: 1
@@ -133,3 +138,41 @@
     - role: devsec.hardening.os_hardening
 
     - role: devsec.hardening.ssh_hardening
+
+  tasks:
+    - name: Configure DOCKER-USER chain to restrict Docker port access by interface
+      when: docker_user_rules_enabled | default(false) | bool
+      block:
+        - name: Allow established/related connections in DOCKER-USER
+          ansible.posix.iptables:
+            chain: DOCKER-USER
+            in_interface: "{{ docker_user_external_interface }}"
+            ctstate:
+              - ESTABLISHED
+              - RELATED
+            jump: ACCEPT
+            action: insert
+            rule_num: 1
+            ip_version: ipv4
+
+        - name: Allow trusted sources in DOCKER-USER
+          ansible.posix.iptables:
+            chain: DOCKER-USER
+            in_interface: "{{ docker_user_external_interface }}"
+            source: "{{ item }}"
+            jump: ACCEPT
+            action: insert
+            rule_num: 1
+            ip_version: ipv4
+          loop: "{{ docker_user_allowed_sources }}"
+
+        - name: Drop all other traffic in DOCKER-USER on external interface
+          ansible.posix.iptables:
+            chain: DOCKER-USER
+            in_interface: "{{ docker_user_external_interface }}"
+            jump: DROP
+            ip_version: ipv4
+
+        - name: Persist iptables rules
+          ansible.builtin.command: netfilter-persistent save
+          changed_when: true
