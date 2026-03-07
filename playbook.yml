@@ -80,12 +80,12 @@
     portainer_http_port: 8000
     portainer_https_port: 9443
     portainer_data_dir: "/opt/portainer"
-    portainer_bind_address: "0.0.0.0"
+    portainer_bind_address: "127.0.0.1"
     install_dockge: false
     dockge_port: 5001
     dockge_install_dir: "/opt/dockge"
     dockge_stacks_dir: "/opt/stacks"
-    dockge_bind_address: "0.0.0.0"
+    dockge_bind_address: "127.0.0.1"
 
     # Docker log rotation
     docker_log_driver: "json-file"
