@@ -4,9 +4,11 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  when: install_guest_agent | default(true)
 
 - name: Ensure QEMU guest agent is enabled and started
   ansible.builtin.service:
     name: qemu-guest-agent
     state: started
     enabled: true
+  when: install_guest_agent | default(true)

@@ -1,2 +1,3 @@
 # QEMU guest agent defaults
-# Currently no configurable options - agent is installed and started
+# Set to false to skip QEMU guest agent installation (e.g., bare metal or non-QEMU hypervisors)
+install_guest_agent: true
