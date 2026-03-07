@@ -7,8 +7,10 @@ services:
       - "{{ portainer_bind_address }}:{{ portainer_http_port }}:8000"
       - "{{ portainer_bind_address }}:{{ portainer_https_port }}:9443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock  # rw required: Portainer manages container lifecycle
       - portainer_data:/data
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   portainer_data:

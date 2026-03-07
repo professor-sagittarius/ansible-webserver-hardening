@@ -112,6 +112,7 @@ portainer_bind_address: "127.0.0.1"    # Bind address - 127.0.0.1 by default; se
 # WARNING: Dockge also mounts /var/run/docker.sock (root-equivalent access).
 # Default is false. If enabled, set dockge_bind_address to your LAN IP or 127.0.0.1.
 install_dockge: false
+dockge_version: "1.4.2"               # Pinned version - update deliberately
 dockge_port: 5001                           # Dockge web UI port
 dockge_install_dir: "/opt/dockge"           # Dockge installation directory
 dockge_stacks_dir: "/opt/stacks"            # Dockge stacks directory

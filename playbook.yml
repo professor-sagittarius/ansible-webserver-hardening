@@ -82,6 +82,7 @@
     portainer_data_dir: "/opt/portainer"
     portainer_bind_address: "127.0.0.1"
     install_dockge: false
+    dockge_version: "1.4.2"
     dockge_port: 5001
     dockge_install_dir: "/opt/dockge"
     dockge_stacks_dir: "/opt/stacks"

@@ -25,6 +25,7 @@ portainer_bind_address: "127.0.0.1"
 # Dockge settings
 # WARNING: Dockge also mounts /var/run/docker.sock. Restrict dockge_bind_address similarly.
 install_dockge: false
+dockge_version: "1.4.2"                # Pinned version - update deliberately
 dockge_port: 5001
 dockge_install_dir: "/opt/dockge"
 dockge_stacks_dir: "/opt/stacks"

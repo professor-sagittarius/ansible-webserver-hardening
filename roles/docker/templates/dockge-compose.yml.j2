@@ -1,13 +1,15 @@
 services:
   dockge:
-    image: louislam/dockge:1
+    image: louislam/dockge:{{ dockge_version }}
     container_name: dockge
     restart: unless-stopped
     ports:
       - "{{ dockge_bind_address }}:{{ dockge_port }}:5001"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock  # rw required: Dockge manages container lifecycle
       - {{ dockge_install_dir }}/data:/app/data
       - {{ dockge_stacks_dir }}:{{ dockge_stacks_dir }}
     environment:
       DOCKGE_STACKS_DIR: {{ dockge_stacks_dir }}
+    security_opt:
+      - no-new-privileges:true
