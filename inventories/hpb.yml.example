@@ -1,0 +1,29 @@
+# Inventory for HPB VPS deployment (Hetzner or similar providers)
+# Usage: cp inventories/hpb.yml.example inventories/hpb.yml
+#        ansible-playbook -i inventories/hpb.yml hpb-playbook.yml --ask-vault-pass
+#
+# inventories/hpb.yml is gitignored - edit your local copy, never commit it.
+
+all:
+  vars:
+    ansible_user: root
+
+    # SSH hardening (set to 'yes'/true for initial setup, 'no'/false for hardened)
+    ssh_permit_root_login: 'no'
+    ssh_password_authentication: false
+
+  hosts:
+    # Add your HPB server here. Example:
+    # hpb-server:
+    #   ansible_host: <your-server-ip>
+    #   users_group_list:
+    #     - name: docker
+    #   users_user_list:
+    #     - name: admin
+    #       groups:
+    #         - sudo
+    #         - docker
+    #       password: "{{ admin_password | password_hash('sha512') }}"
+    #       authorized_keys:
+    #         - "ssh-ed25519 AAAA... your-key-here"
+    #       expires: -1
