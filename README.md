@@ -87,6 +87,7 @@ ansible-playbook -i inventories/localhost.yml playbook.yml --ask-vault-pass
 | `guest_agent` | Install QEMU guest agent (for Proxmox/KVM VMs) |
 | `ssh_preflight` | Pre-flight checks to prevent SSH lockout during hardening |
 | `netbird` | Install and register Netbird WireGuard VPN client (optional, disabled by default) |
+| `hpb` | Install packages required by the half-price-books HPB + Collabora stack (nginx, certbot, etc.) |
 
 ### External Roles
 
@@ -226,6 +227,31 @@ ansible-playbook -i inventories/localhost.yml playbooks/security-compliance.yml 
 ansible-playbook -i inventories/localhost.yml playbooks/security-compliance.yml --ask-vault-pass
 ```
 
+## HPB Playbook
+
+`hpb-playbook.yml` provisions a Debian VPS on Hetzner (or similar cloud providers) for the
+[half-price-books](../half-price-books) Nextcloud Talk HPB + Collabora stack.
+
+Differences from `playbook.yml`:
+
+- `guest_agent` and `disk_resize` roles are omitted (not applicable on Hetzner VPS)
+- `netbird` role is omitted (replaced by the Hetzner cloud firewall)
+- Firewall opens ports 80, 443, 3478 TCP/UDP, and 20000-40000 UDP (Janus RTP) in addition to SSH
+- IPv6 is preserved (`network_ipv6_enable: true`) - required because Collabora is reached by
+  Nextcloud instances via IPv6
+- A new `hpb` role installs nginx, certbot, python3-certbot-nginx, netcat-openbsd, and python3
+
+### Running the HPB playbook
+
+```bash
+cp inventories/hpb.yml.example inventories/hpb.yml
+vim inventories/hpb.yml          # Set ansible_host and users_user_list
+ansible-playbook -i inventories/hpb.yml hpb-playbook.yml --ask-vault-pass
+```
+
+After provisioning, continue from Step 3 of the
+[half-price-books setup guide](../half-price-books/README.md).
+
 ## Dependency Updates
 
 External roles and collections are version-pinned in `requirements.yml`. A GitHub Actions workflow (`.github/workflows/galaxy-updates.yml`) runs every Monday and opens a pull request automatically if any role or collection has a newer version available on Ansible Galaxy.
@@ -250,7 +276,9 @@ ansible-webserver-hardening/
 ├── inventories/localhost.yml.example     # Template - copy and edit
 ├── inventories/remote.yml             # Gitignored - copy from *.example
 ├── inventories/remote.yml.example        # Template - copy and edit
+├── inventories/hpb.yml.example           # Template for HPB VPS deployment
 ├── playbook.yml                        # Main provisioning playbook
+├── hpb-playbook.yml                    # HPB VPS provisioning playbook (Hetzner, non-Proxmox)
 ├── playbooks/
 │   ├── add-user.yml                    # Add a user post-provisioning
 │   ├── resize-disk.yml                 # Expand disk post-provisioning
@@ -262,7 +290,8 @@ ansible-webserver-hardening/
     ├── disk_resize/
     ├── guest_agent/
     ├── netbird/                        # Netbird WireGuard VPN client (optional)
-    └── ssh_preflight/
+    ├── ssh_preflight/
+    └── hpb/                            # HPB package installation (nginx, certbot, etc.)
 ```
 
 External roles (`geerlingguy.*`, `robertdebock.*`) are fetched by `bootstrap.sh` and gitignored. They are version-pinned in `requirements.yml`. To update a role, change its version there and re-run `bootstrap.sh`.
