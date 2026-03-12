@@ -61,6 +61,7 @@
     # devsec variable name so both roles always agree on the setting.
     ssh_server_password_login: "{{ ssh_password_authentication | default(false) }}"
     # Restrict SSH to members of the sudo group only.
+    # Override in inventory if you need a different group (e.g. ssh_allow_groups: "sudo ssh").
     ssh_allow_groups: "sudo"
 
     # Fail2ban (robertdebock.fail2ban)
@@ -83,6 +84,10 @@
     docker_compose_package_state: present
     docker_users: []                        # Managed by robertdebock.users instead
     install_docker_python: true
+    # Portainer and Dockge both mount /var/run/docker.sock (root-equivalent).
+    # Both default to false - enable explicitly in inventory.
+    # Set portainer_bind_address/dockge_bind_address to your LAN IP or 127.0.0.1
+    # to prevent exposure beyond your intended network. See README for details.
     install_portainer: false
     portainer_version: "2.21.5"
     portainer_http_port: 8000
