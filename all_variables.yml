@@ -585,3 +585,18 @@ netbird_setup_key: "{{ vault_netbird_setup_key }}"
 netbird_register: true                      # Register node on install (set false to install only)
 
 # netbird_mgmt_url: "https://api.netbird.io:443"  # Override for self-hosted management server
+
+
+# =============================================================================
+# HPB Role (local)
+# =============================================================================
+# Installs packages required by the half-price-books HPB + Collabora stack.
+# Covers half-price-books README Step 2. curl and openssl are omitted here
+# as they are already installed by the base role.
+
+hpb_packages:                               # Packages to install for HPB stack
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - netcat-openbsd
+  - python3
