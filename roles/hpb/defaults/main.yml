@@ -1,0 +1,7 @@
+hpb_packages:                               # Packages installed for HPB stack
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - netcat-openbsd
+  - python3
+# curl and openssl are omitted: already installed by the base role
