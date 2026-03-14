@@ -1,0 +1,7 @@
+# roles/proxmox_host/meta/main.yml
+galaxy_info:
+  role_name: proxmox_host
+  author: local
+  description: Proxmox VE 9 host hardening - firewall, repos, sysctl, services, auditd
+  min_ansible_version: "2.10"
+dependencies: []

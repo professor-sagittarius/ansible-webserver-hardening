@@ -1,0 +1,35 @@
+# roles/proxmox_host/defaults/main.yml
+
+# Cluster topology
+proxmox_cluster_node: false     # true for cluster members: enables corosync ports + HA services
+proxmox_cluster_cidr: ""        # CIDR for cluster traffic (required when proxmox_cluster_node: true)
+
+# Access restriction
+proxmox_trusted_cidr: ""        # restrict SSH (22) and web UI (8006) to this CIDR; empty = allow any
+
+# Firewall
+proxmox_firewall_enabled: true          # false skips host.fw entirely (does not write or modify it)
+proxmox_spice_enabled: false            # open SPICE proxy port 3128
+proxmox_live_migration_enabled: false   # open ports 60000-60050 TCP for live VM migration
+
+# Repository management
+proxmox_enterprise_repo_enabled: false       # false disables pve-enterprise; prevents apt update 401 errors
+proxmox_ceph_enterprise_repo_enabled: false  # false disables ceph enterprise repo
+proxmox_no_subscription_repo_enabled: true   # true adds pve-no-subscription repo
+
+# Service management
+# false = skip all service management, leave current state unchanged
+# true  = disable HA services on standalone, enable them on cluster
+proxmox_manage_ha_services: true
+
+# Audit logging
+proxmox_auditd_enabled: true
+
+# Subscription nag removal
+# Patches proxmox-widget-toolkit JS to suppress subscription warning dialog.
+# Must be re-applied after pveupgrade reinstalls proxmox-widget-toolkit.
+proxmox_remove_subscription_nag: true
+
+# Upgrade notifications (upgrades are NEVER applied automatically)
+proxmox_upgrade_notify_enabled: true
+proxmox_upgrade_notify_email: ""  # required when proxmox_upgrade_notify_enabled: true
