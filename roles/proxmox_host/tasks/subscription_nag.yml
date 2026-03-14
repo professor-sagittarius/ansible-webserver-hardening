@@ -13,6 +13,7 @@
   args:
     executable: /bin/bash
   when: nag_check.stdout | int == 0
+  changed_when: true
 
 - name: Verify subscription nag is patched
   ansible.builtin.command:

@@ -32,11 +32,11 @@ IN ACCEPT -p tcp -dport 2224 -source {{ proxmox_cluster_cidr }} -log nolog
 {% endif %}
 
 {% if proxmox_live_migration_enabled | bool %}
-# Live VM migration
-IN ACCEPT -p tcp -dport 60000:60050 -log nolog
+# Live VM migration - restricted to cluster peers
+IN ACCEPT -p tcp -dport 60000:60050{% if proxmox_cluster_node | bool and proxmox_cluster_cidr %} -source {{ proxmox_cluster_cidr }}{% endif %} -log nolog
 {% endif %}
 
 {% if proxmox_spice_enabled | bool %}
-# SPICE remote console proxy
+# SPICE remote console proxy - intentionally unrestricted (auth handled by pveproxy)
 IN ACCEPT -p tcp -dport 3128 -log nolog
 {% endif %}
