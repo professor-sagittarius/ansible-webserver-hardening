@@ -1,0 +1,42 @@
+{# roles/proxmox_host/templates/host.fw.j2 #}
+{# Managed by Ansible - proxmox_host role. Do not edit manually. #}
+{# Note: policy_in DROP silently drops ICMP (ping). This is intentional. #}
+[OPTIONS]
+enable: 1
+policy_in: DROP
+policy_out: ACCEPT
+
+[RULES]
+
+# SSH
+IN ACCEPT -p tcp -dport 22{% if proxmox_trusted_cidr %} -source {{ proxmox_trusted_cidr }}{% endif %} -log nolog
+
+# PVE web UI
+IN ACCEPT -p tcp -dport 8006{% if proxmox_trusted_cidr %} -source {{ proxmox_trusted_cidr }}{% endif %} -log nolog
+
+{% if proxmox_cluster_node | bool %}
+# Corosync cluster communication
+IN ACCEPT -p udp -dport 5405:5406 -source {{ proxmox_cluster_cidr }} -log nolog
+
+# Corosync fallback
+IN ACCEPT -p udp -dport 5404 -source {{ proxmox_cluster_cidr }} -log nolog
+
+# rpcbind (required for pmxcfs cluster filesystem)
+IN ACCEPT -p tcp -dport 111 -source {{ proxmox_cluster_cidr }} -log nolog
+IN ACCEPT -p udp -dport 111 -source {{ proxmox_cluster_cidr }} -log nolog
+
+{% if proxmox_manage_ha_services | bool %}
+# Pacemaker (HA)
+IN ACCEPT -p tcp -dport 2224 -source {{ proxmox_cluster_cidr }} -log nolog
+{% endif %}
+{% endif %}
+
+{% if proxmox_live_migration_enabled | bool %}
+# Live VM migration
+IN ACCEPT -p tcp -dport 60000:60050 -log nolog
+{% endif %}
+
+{% if proxmox_spice_enabled | bool %}
+# SPICE remote console proxy
+IN ACCEPT -p tcp -dport 3128 -log nolog
+{% endif %}
