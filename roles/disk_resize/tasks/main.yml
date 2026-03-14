@@ -28,9 +28,7 @@
   register: resize_result
   changed_when: "'nothing to do' not in resize_result.stderr"
   failed_when: resize_result.rc != 0 and 'Nothing to do' not in resize_result.stderr
-  when:
-    - growpart_result.changed
-    - _fs_type_result.stdout | default('') in ['ext2', 'ext3', 'ext4']
+  when: _fs_type_result.stdout | default('') in ['ext2', 'ext3', 'ext4']
   notify: reboot system
 
 - name: Resize XFS filesystem
@@ -38,18 +36,8 @@
     cmd: "xfs_growfs {{ _partition_device }}"
   register: xfs_resize_result
   changed_when: true
-  when:
-    - growpart_result.changed
-    - _fs_type_result.stdout | default('') == 'xfs'
+  when: _fs_type_result.stdout | default('') == 'xfs'
   notify: reboot system
-
-- name: DEBUG - show partition device and filesystem type
-  ansible.builtin.debug:
-    msg:
-      - "partition_device: {{ _partition_device }}"
-      - "fs_type stdout: '{{ _fs_type_result.stdout | default('') }}'"
-      - "fs_type rc: {{ _fs_type_result.rc | default('N/A') }}"
-      - "fs_type stderr: '{{ _fs_type_result.stderr | default('') }}'"
 
 - name: Detect ZFS pool name from partition
   ansible.builtin.command:
@@ -57,29 +45,6 @@
   register: _zfs_pool_result
   changed_when: false
   failed_when: false
-  when: _fs_type_result.stdout | default('') == 'zfs_member'
-
-- name: DEBUG - ZFS diagnostics
-  ansible.builtin.shell:
-    cmd: |
-      echo "=== partition device ==="
-      echo "{{ _partition_device }}"
-      echo "=== blkid full output ==="
-      blkid {{ _partition_device }}
-      echo "=== pool name from blkid LABEL ==="
-      echo "{{ _zfs_pool_result.stdout | default('EMPTY') | trim }}"
-      echo "=== zpool list ==="
-      zpool list
-      echo "=== zpool status -P ==="
-      zpool status -P
-  register: _zfs_debug
-  changed_when: false
-  failed_when: false
-  when: _fs_type_result.stdout | default('') == 'zfs_member'
-
-- name: DEBUG - show ZFS diagnostic output
-  ansible.builtin.debug:
-    msg: "{{ _zfs_debug.stdout_lines | default([]) }}"
   when: _fs_type_result.stdout | default('') == 'zfs_member'
 
 - name: Expand ZFS pool to use grown partition
