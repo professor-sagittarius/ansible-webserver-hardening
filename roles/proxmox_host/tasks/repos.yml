@@ -1,0 +1,46 @@
+# roles/proxmox_host/tasks/repos.yml
+# PVE 9 uses deb822 .sources format (not legacy .list format).
+# Each repo is managed independently via its own .sources file.
+
+- name: Check if PVE enterprise sources file exists
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/pve-enterprise.sources
+  register: pve_enterprise_stat
+
+- name: Manage PVE enterprise repository
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/pve-enterprise.sources
+    regexp: '^Enabled:'
+    line: "Enabled: {{ 'yes' if proxmox_enterprise_repo_enabled | bool else 'no' }}"
+  when: pve_enterprise_stat.stat.exists
+
+- name: Check if Ceph enterprise sources file exists
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/ceph.sources
+  register: ceph_enterprise_stat
+
+- name: Manage Ceph enterprise repository
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/ceph.sources
+    regexp: '^Enabled:'
+    line: "Enabled: {{ 'yes' if proxmox_ceph_enterprise_repo_enabled | bool else 'no' }}"
+  when: ceph_enterprise_stat.stat.exists
+
+- name: Manage PVE no-subscription repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/pve-no-subscription.sources
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # PVE no-subscription repository - managed by Ansible
+      Types: deb
+      URIs: http://download.proxmox.com/debian/pve
+      Suites: trixie
+      Components: pve-no-subscription
+      Enabled: {{ 'yes' if proxmox_no_subscription_repo_enabled | bool else 'no' }}
+
+- name: Update apt cache after repo changes
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 0
