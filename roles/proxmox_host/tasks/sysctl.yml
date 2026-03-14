@@ -1,0 +1,9 @@
+# roles/proxmox_host/tasks/sysctl.yml
+- name: Write PVE-safe sysctl profile
+  ansible.builtin.template:
+    src: 10-pve-sysctl.conf.j2
+    dest: /etc/sysctl.d/10-pve-hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload sysctl

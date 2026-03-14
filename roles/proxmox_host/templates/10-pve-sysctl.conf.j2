@@ -1,0 +1,34 @@
+# /etc/sysctl.d/10-pve-hardening.conf
+# Managed by Ansible - proxmox_host role. Do not edit manually.
+#
+# PVE-safe sysctl hardening profile.
+# ip_forward and ipv6 forwarding are preserved at 1 - VM networking depends on them.
+
+# VM networking - MUST remain 1
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1
+
+# Disable ICMP redirect sending and acceptance
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv6.conf.all.accept_redirects = 0
+
+# Disable source routing
+net.ipv4.conf.all.accept_source_route = 0
+
+# SYN flood protection
+net.ipv4.tcp_syncookies = 1
+
+# Reverse path filtering
+# Standalone: strict (1) - packets must arrive on the interface the kernel would reply from
+# Cluster: loose (2) - allows asymmetric routing common in multi-network cluster setups
+#   (separate storage/cluster/management networks cause strict mode to drop legitimate packets)
+net.ipv4.conf.all.rp_filter = {{ 2 if proxmox_cluster_node | bool else 1 }}
+net.ipv4.conf.default.rp_filter = {{ 2 if proxmox_cluster_node | bool else 1 }}
+
+# Kernel hardening
+kernel.kptr_restrict = 2
+kernel.dmesg_restrict = 1
+kernel.sysrq = 0
