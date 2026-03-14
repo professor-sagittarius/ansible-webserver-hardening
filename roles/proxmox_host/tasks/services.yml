@@ -14,6 +14,7 @@
     - pve-ha-crm
     - corosync
   when: not proxmox_cluster_node | bool
+  failed_when: false
 
 - name: Manage HA and cluster services on cluster node
   ansible.builtin.service:
@@ -25,3 +26,4 @@
     - pve-ha-lrm
     - pve-ha-crm
   when: proxmox_cluster_node | bool
+  failed_when: false

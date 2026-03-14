@@ -21,7 +21,7 @@ IN ACCEPT -p udp -dport 5405:5406 -source {{ proxmox_cluster_cidr }} -log nolog
 # Corosync fallback
 IN ACCEPT -p udp -dport 5404 -source {{ proxmox_cluster_cidr }} -log nolog
 
-# rpcbind (required for pmxcfs cluster filesystem)
+# rpcbind (required for PVE cluster node-to-node RPC communication)
 IN ACCEPT -p tcp -dport 111 -source {{ proxmox_cluster_cidr }} -log nolog
 IN ACCEPT -p udp -dport 111 -source {{ proxmox_cluster_cidr }} -log nolog
 

@@ -4,9 +4,10 @@
 #
 # Run: ansible-playbook -i inventories/proxmox.yml proxmox-playbook.yml
 #
-# Note: ssh_permit_root_login and ssh_password_authentication are already set
-# at the proxmox-playbook.yml vars level. Inventory vars take precedence over
-# playbook vars, so keep these values consistent with the playbook vars block.
+# Note: ssh_permit_root_login and ssh_password_authentication are set in
+# proxmox-playbook.yml vars. Playbook vars take higher precedence than inventory
+# vars, so the entries below will not take effect - they are here for reference
+# only. Keep them consistent with the playbook vars block to avoid confusion.
 
 all:
   vars:
