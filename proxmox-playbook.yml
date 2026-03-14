@@ -1,0 +1,132 @@
+# proxmox-playbook.yml
+# Hardens Proxmox VE 9 (Debian 13 Trixie) hypervisor nodes.
+# Target: PVE host OS - NOT guest VMs (use playbook.yml for VMs).
+#
+# EXCLUDED vs. playbook.yml (with reasons):
+#   - geerlingguy.firewall        -> replaced by PVE built-in firewall (proxmox_host role)
+#   - devsec.hardening.os_hardening -> conflicts with PVE networking and PAM; proxmox_host applies safe equivalent
+#   - guest_agent                 -> for VMs running on Proxmox, not for PVE hosts themselves
+#   - disk_resize                 -> PVE manages its storage; OS-level partition resize is not applicable
+#   - docker                      -> not applicable to PVE hosts
+#   - netbird                     -> add manually if needed via inventory include
+#
+# ssh_preflight behavior: with ssh_permit_root_login: 'prohibit-password', the preflight
+# role passes silently. Neither the lockout-prevention abort (fires only on 'no') nor the
+# root-login warning (fires only on 'yes') is triggered.
+
+- name: Proxmox VE Host Hardening
+  hosts: all
+  become: true
+
+  vars:
+    # Disable unattended-upgrades for PVE packages.
+    # PVE must be upgraded manually via pveupgrade after a node backup.
+    # plain 'apt upgrade' is insufficient - PVE requires 'apt dist-upgrade'.
+    base_unattended_upgrades_enabled: false
+
+    # Root SSH must remain enabled for PVE cluster operations and web UI shell.
+    # prohibit-password = key-based root login only (password blocked).
+    # NEVER set to 'no' on a PVE host - breaks cluster and web UI shell.
+    ssh_permit_root_login: 'prohibit-password'
+    ssh_password_authentication: false
+
+    # SSH hardening (devsec.hardening.ssh_hardening)
+    # PAM is NOT modified - pveproxy web shell auth goes through PAM independently.
+    sftp_enabled: true
+    ssh_server_ports: ['22']
+    ssh_max_auth_retries: 3
+    ssh_client_alive_interval: 300
+    ssh_client_alive_count: 6
+    # Map ssh_password_authentication to the devsec variable so both roles always agree.
+    # Pattern from playbook.yml - do not change to a literal value.
+    ssh_server_password_login: "{{ ssh_password_authentication | default(false) }}"
+    # PVE hosts do not use sudo groups; root is the only privileged account.
+    # Empty string removes the group restriction so root can connect via SSH.
+    ssh_allow_groups: ""
+
+    # Fail2ban (robertdebock.fail2ban)
+    fail2ban_bantime: 3600
+    fail2ban_findtime: 600
+    fail2ban_maxretry: 5
+    # Omits the dynamic subnet auto-detection from playbook.yml because PVE hosts are
+    # multi-homed (cluster/storage/management networks). Add trusted IPs here if needed.
+    fail2ban_ignoreips: "127.0.0.1/8 ::1"
+    fail2ban_jail_configuration:
+      - option: enabled
+        value: "true"
+        section: sshd
+
+    # Cron job for PVE upgrade notifications (robertdebock.cron)
+    # Only active when proxmox_upgrade_notify_enabled: true (see roles section).
+    cron_jobs:
+      - name: pve-upgrade-check
+        minute: "0"
+        hour: "7"
+        job: /usr/local/bin/pve-upgrade-check.sh
+        user: root
+        state: present
+
+  handlers:
+    # Required for playbook-level tasks that notify fail2ban restart.
+    # Cannot rely on the internal handler inside robertdebock.fail2ban.
+    - name: restart fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        state: restarted
+
+  roles:
+    # Phase 1: User setup (optional - most PVE hosts use root only)
+    - role: robertdebock.users
+      vars:
+        users: "{{ users_user_list }}"
+        users_groups: "{{ users_group_list | default([]) }}"
+      when: users_user_list | default([]) | length > 0
+
+    # Phase 2: SSH lockout prevention check
+    # Passes silently with prohibit-password - no WARNING is emitted.
+    - role: ssh_preflight
+
+    # Phase 3: Base system (packages, NTP only; swap and guest_agent excluded)
+    - role: base
+
+    # Phase 4: PVE-specific hardening
+    - role: proxmox_host
+
+    # Phase 5: Security hardening layer
+    - role: devsec.hardening.ssh_hardening
+
+    - role: robertdebock.fail2ban
+
+    # Ensures cron daemon is installed; job entry defined via cron_jobs var above.
+    - role: robertdebock.cron
+      when: proxmox_upgrade_notify_enabled | default(false) | bool
+
+  tasks:
+    # Deploy fail2ban filter and jail for PVE web UI (port 8006).
+    # Uses journald backend - /var/log/daemon.log may not exist on PVE 9 / Debian 13.
+    - name: Deploy fail2ban pve-web filter
+      ansible.builtin.copy:
+        src: roles/proxmox_host/files/pve-web.conf
+        dest: /etc/fail2ban/filter.d/pve-web.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart fail2ban
+
+    - name: Deploy fail2ban pve-web jail
+      ansible.builtin.copy:
+        dest: /etc/fail2ban/jail.d/pve-web.conf
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [pve-web]
+          enabled  = true
+          backend  = systemd
+          journalmatch = _SYSTEMD_UNIT=pveproxy.service
+          filter   = pve-web
+          port     = 8006
+          bantime  = {{ fail2ban_bantime | default(3600) }}
+          findtime = {{ fail2ban_findtime | default(600) }}
+          maxretry = {{ fail2ban_maxretry | default(5) }}
+      notify: restart fail2ban

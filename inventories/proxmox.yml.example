@@ -1,0 +1,33 @@
+# inventories/proxmox.yml.example
+# Copy to inventories/proxmox.yml (gitignored) and fill in real values.
+# Store secrets in group_vars/all/vault.yml (also gitignored).
+#
+# Run: ansible-playbook -i inventories/proxmox.yml proxmox-playbook.yml
+#
+# Note: ssh_permit_root_login and ssh_password_authentication are already set
+# at the proxmox-playbook.yml vars level. Inventory vars take precedence over
+# playbook vars, so keep these values consistent with the playbook vars block.
+
+all:
+  vars:
+    ansible_user: root
+    # Must match the proxmox-playbook.yml vars block.
+    ssh_permit_root_login: 'prohibit-password'
+    ssh_password_authentication: false
+
+  hosts:
+    # Example: cluster node with live migration
+    pve-node-01:
+      ansible_host: 192.168.1.10
+      proxmox_cluster_node: true
+      proxmox_cluster_cidr: "192.168.1.0/24"
+      proxmox_trusted_cidr: "192.168.1.0/24"
+      proxmox_live_migration_enabled: true
+      proxmox_upgrade_notify_email: "admin@example.com"
+
+    # Example: standalone node (no cluster)
+    pve-standalone:
+      ansible_host: 192.168.1.20
+      proxmox_cluster_node: false
+      proxmox_trusted_cidr: "192.168.1.0/24"
+      proxmox_upgrade_notify_email: "admin@example.com"
