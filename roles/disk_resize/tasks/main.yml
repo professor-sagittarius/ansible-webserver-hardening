@@ -7,10 +7,7 @@
 
 - name: Detect partition device path
   ansible.builtin.set_fact:
-    _partition_device: >-
-      {{ disk_device }}p{{ partition_number }}
-      if disk_device is match('.*(nvme|mmcblk).*')
-      else disk_device ~ partition_number
+    _partition_device: "{{ disk_device ~ 'p' ~ partition_number if disk_device is match('.*(nvme|mmcblk).*') else disk_device ~ partition_number | string }}"
 
 - name: Grow partition to use all available space
   ansible.builtin.command:
@@ -47,12 +44,31 @@
     - _fs_type_result.stdout | default('') == 'xfs'
   notify: reboot system
 
+- name: Detect ZFS pool name from partition
+  ansible.builtin.shell:
+    cmd: "zdb -l {{ _partition_device }} | grep -m1 '\\bname\\b' | awk -F\\' '{print $2}'"
+  register: _zfs_pool_result
+  changed_when: false
+  when:
+    - growpart_result.changed
+    - _fs_type_result.stdout | default('') == 'zfs_member'
+
+- name: Resize ZFS pool
+  ansible.builtin.command:
+    cmd: "zpool online -e {{ _zfs_pool_result.stdout | trim }} {{ _partition_device }}"
+  changed_when: true
+  when:
+    - growpart_result.changed
+    - _fs_type_result.stdout | default('') == 'zfs_member'
+    - (_zfs_pool_result.stdout | default('')) | trim != ''
+  notify: reboot system
+
 - name: Fail if filesystem type is unsupported
   ansible.builtin.fail:
     msg: >
       Unsupported filesystem type '{{ _fs_type_result.stdout | default('unknown') }}'
-      on {{ _partition_device }}. Supported types: ext2, ext3, ext4, xfs.
+      on {{ _partition_device }}. Supported types: ext2, ext3, ext4, xfs, zfs_member.
       Resize manually or extend this role.
   when:
     - growpart_result.changed
-    - _fs_type_result.stdout | default('') not in ['ext2', 'ext3', 'ext4', 'xfs', '']
+    - _fs_type_result.stdout | default('') not in ['ext2', 'ext3', 'ext4', 'xfs', 'zfs_member', '']
