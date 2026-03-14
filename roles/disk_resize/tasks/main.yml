@@ -51,6 +51,29 @@
   failed_when: false
   when: _fs_type_result.stdout | default('') == 'zfs_member'
 
+- name: DEBUG - ZFS diagnostics
+  ansible.builtin.shell:
+    cmd: |
+      echo "=== partition device ==="
+      echo "{{ _partition_device }}"
+      echo "=== blkid full output ==="
+      blkid {{ _partition_device }}
+      echo "=== pool name from blkid LABEL ==="
+      echo "{{ _zfs_pool_result.stdout | default('EMPTY') | trim }}"
+      echo "=== zpool list ==="
+      zpool list
+      echo "=== zpool status -P ==="
+      zpool status -P
+  register: _zfs_debug
+  changed_when: false
+  failed_when: false
+  when: _fs_type_result.stdout | default('') == 'zfs_member'
+
+- name: DEBUG - show ZFS diagnostic output
+  ansible.builtin.debug:
+    msg: "{{ _zfs_debug.stdout_lines | default([]) }}"
+  when: _fs_type_result.stdout | default('') == 'zfs_member'
+
 - name: Expand ZFS pool to use grown partition
   ansible.builtin.shell:
     cmd: |
