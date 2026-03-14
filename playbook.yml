@@ -144,7 +144,7 @@
       when: docker_user_rules_enabled | default(false) | bool
       block:
         - name: Allow established/related connections in DOCKER-USER
-          ansible.posix.iptables:
+          ansible.builtin.iptables:
             chain: DOCKER-USER
             in_interface: "{{ docker_user_external_interface }}"
             ctstate:
@@ -156,7 +156,7 @@
             ip_version: ipv4
 
         - name: Allow trusted sources in DOCKER-USER
-          ansible.posix.iptables:
+          ansible.builtin.iptables:
             chain: DOCKER-USER
             in_interface: "{{ docker_user_external_interface }}"
             source: "{{ item }}"
@@ -167,7 +167,7 @@
           loop: "{{ docker_user_allowed_sources }}"
 
         - name: Drop all other traffic in DOCKER-USER on external interface
-          ansible.posix.iptables:
+          ansible.builtin.iptables:
             chain: DOCKER-USER
             in_interface: "{{ docker_user_external_interface }}"
             jump: DROP
