@@ -26,4 +26,3 @@
     - pve-ha-lrm
     - pve-ha-crm
   when: proxmox_cluster_node | bool
-  failed_when: false
