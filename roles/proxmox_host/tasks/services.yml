@@ -1,0 +1,27 @@
+# roles/proxmox_host/tasks/services.yml
+# Manages pve-ha-lrm, pve-ha-crm, and corosync based on cluster topology.
+# Standalone: disable and stop to reclaim resources.
+# Cluster: ensure enabled and running.
+# When proxmox_manage_ha_services: false, this file is not included (see tasks/main.yml).
+
+- name: Manage HA and cluster services on standalone node
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - pve-ha-lrm
+    - pve-ha-crm
+    - corosync
+  when: not proxmox_cluster_node | bool
+
+- name: Manage HA and cluster services on cluster node
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - corosync
+    - pve-ha-lrm
+    - pve-ha-crm
+  when: proxmox_cluster_node | bool
