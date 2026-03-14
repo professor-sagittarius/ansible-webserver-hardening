@@ -1,0 +1,26 @@
+# roles/proxmox_host/tasks/upgrade_notify.yml
+# Note: the cron job entry is declared via the cron_jobs var in proxmox-playbook.yml
+# and applied by the robertdebock.cron role in the roles list.
+# This task file only handles the assert, package install, and script deployment.
+
+- name: Assert upgrade notification email is set
+  ansible.builtin.assert:
+    that: proxmox_upgrade_notify_email | length > 0
+    fail_msg: >
+      proxmox_upgrade_notify_email must be set when proxmox_upgrade_notify_enabled is true.
+      Set it in your inventory or disable notifications with proxmox_upgrade_notify_enabled: false.
+
+- name: Install mailutils for upgrade notifications
+  ansible.builtin.apt:
+    name: mailutils
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Deploy upgrade check script
+  ansible.builtin.template:
+    src: pve-upgrade-check.sh.j2
+    dest: /usr/local/bin/pve-upgrade-check.sh
+    owner: root
+    group: root
+    mode: '0750'

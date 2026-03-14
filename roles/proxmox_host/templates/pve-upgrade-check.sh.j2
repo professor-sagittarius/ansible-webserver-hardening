@@ -1,0 +1,21 @@
+#!/bin/bash
+# /usr/local/bin/pve-upgrade-check.sh
+# Managed by Ansible - proxmox_host role. Do not edit manually.
+#
+# Checks for pending PVE upgrades and sends an email notification.
+# Upgrades are NEVER applied. Run pveupgrade manually after a node backup.
+# Prerequisite: a local MTA or mail relay must be configured for mail delivery.
+
+set -euo pipefail
+
+NOTIFY_EMAIL="{{ proxmox_upgrade_notify_email }}"
+HOSTNAME="$(hostname -f)"
+
+output="$(apt-get -s dist-upgrade 2>&1)"
+
+if echo "$output" | grep -qE '^[0-9]+ upgraded'; then
+  upgraded_count="$(echo "$output" | grep -oE '^[0-9]+' | head -1)"
+  if [ "$upgraded_count" -gt 0 ]; then
+    echo "$output" | mail -s "[PVE] $upgraded_count upgrade(s) pending on $HOSTNAME" "$NOTIFY_EMAIL"
+  fi
+fi
