@@ -1,0 +1,22 @@
+- name: Check if subscription nag is already patched
+  ansible.builtin.command:
+    cmd: grep -c "subscription nag suppressed by Ansible" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+  register: nag_check
+  changed_when: false
+  failed_when: false
+
+- name: Patch proxmox-widget-toolkit to suppress subscription nag
+  ansible.builtin.shell: |
+    perl -i -0pe \
+      's/Ext\.Msg\.show\(\{[\s\S]*?title: gettext\(.No valid subscription.\)[\s\S]*?\}\);/void(0); \/\/ subscription nag suppressed by Ansible/g' \
+      /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+  args:
+    executable: /bin/bash
+  when: nag_check.stdout | int == 0
+
+- name: Verify subscription nag is patched
+  ansible.builtin.command:
+    cmd: grep -c "subscription nag suppressed by Ansible" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+  register: nag_verify
+  changed_when: false
+  failed_when: nag_verify.rc != 0 or nag_verify.stdout | int < 1
