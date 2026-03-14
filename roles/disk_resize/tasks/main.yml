@@ -43,6 +43,14 @@
     - _fs_type_result.stdout | default('') == 'xfs'
   notify: reboot system
 
+- name: DEBUG - show partition device and filesystem type
+  ansible.builtin.debug:
+    msg:
+      - "partition_device: {{ _partition_device }}"
+      - "fs_type stdout: '{{ _fs_type_result.stdout | default('') }}'"
+      - "fs_type rc: {{ _fs_type_result.rc | default('N/A') }}"
+      - "fs_type stderr: '{{ _fs_type_result.stderr | default('') }}'"
+
 - name: Detect ZFS pool name from partition
   ansible.builtin.command:
     cmd: "blkid -s LABEL -o value {{ _partition_device }}"
