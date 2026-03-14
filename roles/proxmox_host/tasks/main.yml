@@ -1,0 +1,26 @@
+# roles/proxmox_host/tasks/main.yml
+- name: Configure PVE host firewall
+  ansible.builtin.include_tasks: firewall.yml
+  when: proxmox_firewall_enabled | bool
+
+- name: Configure PVE repositories
+  ansible.builtin.include_tasks: repos.yml
+
+- name: Apply PVE-safe sysctl hardening
+  ansible.builtin.include_tasks: sysctl.yml
+
+- name: Manage PVE HA and cluster services
+  ansible.builtin.include_tasks: services.yml
+  when: proxmox_manage_ha_services | bool
+
+- name: Configure auditd
+  ansible.builtin.include_tasks: auditd.yml
+  when: proxmox_auditd_enabled | bool
+
+- name: Remove subscription nag
+  ansible.builtin.include_tasks: subscription_nag.yml
+  when: proxmox_remove_subscription_nag | bool
+
+- name: Configure upgrade notifications
+  ansible.builtin.include_tasks: upgrade_notify.yml
+  when: proxmox_upgrade_notify_enabled | bool
