@@ -21,7 +21,6 @@
     cmd: "blkid -s TYPE -o value {{ _partition_device }}"
   register: _fs_type_result
   changed_when: false
-  when: growpart_result.changed
 
 - name: Resize ext2/ext3/ext4 filesystem
   ansible.builtin.command:
@@ -50,18 +49,18 @@
   register: _zfs_pool_result
   changed_when: false
   failed_when: false
-  when:
-    - growpart_result.changed
-    - _fs_type_result.stdout | default('') == 'zfs_member'
+  when: _fs_type_result.stdout | default('') == 'zfs_member'
 
 - name: Expand ZFS pool to use grown partition
   ansible.builtin.shell:
     cmd: |
-      zpool set autoexpand=on {{ _zfs_pool_result.stdout | trim }}
-      zpool reopen {{ _zfs_pool_result.stdout | trim }}
+      pool="{{ _zfs_pool_result.stdout | trim }}"
+      vdev=$(zpool status -P "$pool" | awk '/\/dev\//{gsub(/^[[:space:]]+/, ""); print $1}' | grep -F "{{ _partition_device }}" | head -1)
+      vdev=${vdev:-{{ _partition_device }}}
+      zpool set autoexpand=on "$pool"
+      zpool online -e "$pool" "$vdev"
   changed_when: true
   when:
-    - growpart_result.changed
     - _fs_type_result.stdout | default('') == 'zfs_member'
     - (_zfs_pool_result.stdout | default('')) | trim != ''
   notify: reboot system
