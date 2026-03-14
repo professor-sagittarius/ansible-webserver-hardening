@@ -1,0 +1,27 @@
+# /etc/audit/rules.d/pve-hardening.rules
+# Managed by Ansible - proxmox_host role. Do not edit manually.
+
+# Delete all existing rules first
+-D
+
+# Set buffer size
+-b 8192
+
+# Failure mode: 1 = log to syslog
+-f 1
+
+# Authentication events
+-w /etc/pam.d/ -p wa -k pam_changes
+-w /var/log/auth.log -p wa -k auth_log
+-w /etc/sudo.conf -p wa -k sudo_changes
+-w /etc/sudoers -p wa -k sudo_changes
+-w /etc/sudoers.d/ -p wa -k sudo_changes
+
+# PVE configuration directory - track all writes
+-w /etc/pve/ -p wa -k pve_config
+
+# Privileged command execution
+-a always,exit -F path=/usr/bin/passwd -F perm=x -F auid>=1000 -F auid!=-1 -k passwd_exec
+-a always,exit -F path=/usr/sbin/useradd -F perm=x -F auid>=0 -k useradd_exec
+-a always,exit -F path=/usr/sbin/usermod -F perm=x -F auid>=0 -k usermod_exec
+-a always,exit -F path=/usr/bin/sudo -F perm=x -F auid>=1000 -F auid!=-1 -k sudo_exec

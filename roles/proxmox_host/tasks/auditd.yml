@@ -1,0 +1,22 @@
+# roles/proxmox_host/tasks/auditd.yml
+- name: Install auditd
+  ansible.builtin.apt:
+    name: auditd
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Write PVE auditd rules
+  ansible.builtin.template:
+    src: audit.rules.j2
+    dest: /etc/audit/rules.d/pve-hardening.rules
+    owner: root
+    group: root
+    mode: '0640'
+  notify: reload auditd
+
+- name: Ensure auditd is enabled and running
+  ansible.builtin.service:
+    name: auditd
+    state: started
+    enabled: true
