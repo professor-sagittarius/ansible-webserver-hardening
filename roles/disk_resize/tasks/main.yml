@@ -46,16 +46,19 @@
 
 - name: Detect ZFS pool name from partition
   ansible.builtin.shell:
-    cmd: "zdb -l {{ _partition_device }} | grep -m1 '\\bname\\b' | awk -F\\' '{print $2}'"
+    cmd: "zdb -l {{ _partition_device }} | awk -F\\' '/^[[:space:]]+name:/{print $2; exit}'"
   register: _zfs_pool_result
   changed_when: false
+  failed_when: false
   when:
     - growpart_result.changed
     - _fs_type_result.stdout | default('') == 'zfs_member'
 
-- name: Resize ZFS pool
-  ansible.builtin.command:
-    cmd: "zpool online -e {{ _zfs_pool_result.stdout | trim }} {{ _partition_device }}"
+- name: Expand ZFS pool to use grown partition
+  ansible.builtin.shell:
+    cmd: |
+      zpool set autoexpand=on {{ _zfs_pool_result.stdout | trim }}
+      zpool reopen {{ _zfs_pool_result.stdout | trim }}
   changed_when: true
   when:
     - growpart_result.changed
