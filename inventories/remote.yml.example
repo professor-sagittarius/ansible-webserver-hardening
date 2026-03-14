@@ -31,4 +31,4 @@ all:
     #
     #   # Netbird VPN (optional)
     #   # install_netbird: true
-    #   # Per-host key: define vault_netbird_setup_key in host_vars/server-01/vault.yml
+    #   # Per-host key: define netbird_setup_key in host_vars/server-01/vault.yml

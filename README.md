@@ -62,7 +62,7 @@ ansible-vault edit group_vars/all/vault.yml
 
 ```yaml
 admin_password: "your-secure-password-here"
-vault_netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # if using Netbird
+netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # if using Netbird
 ```
 
 ### Using the vault
@@ -145,7 +145,7 @@ The firewall is automatically configured to open UDP 51820 (WireGuard) when Netb
 
    ```bash
    ansible-vault edit group_vars/all/vault.yml
-   # Add: vault_netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   # Add: netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
    ```
 
    For per-host keys, create `host_vars/<hostname>/vault.yml` instead with the same variable.
@@ -332,6 +332,6 @@ External roles (`geerlingguy.*`, `robertdebock.*`) are fetched by `bootstrap.sh`
 - To access from LAN, set the bind address to the server's LAN IP in inventory
 
 **Netbird registration fails:**
-- Confirm `vault_netbird_setup_key` is set in `group_vars/all/vault.yml` or the relevant `host_vars/` file
+- Confirm `netbird_setup_key` is set in `group_vars/all/vault.yml` or the relevant `host_vars/` file
 - Verify the setup key is valid and not expired in the Netbird dashboard
 - Check that the server has outbound access to `api.netbird.io:443`

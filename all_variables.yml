@@ -578,9 +578,8 @@ install_netbird: false                      # Enable Netbird installation
 
 # Setup key for node registration. Must be defined in your vault:
 #   ansible-vault edit group_vars/all/vault.yml
-# Add: vault_netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# For per-host keys, define vault_netbird_setup_key in host_vars/<name>/vault.yml instead.
-netbird_setup_key: "{{ vault_netbird_setup_key }}"
+# Add: netbird_setup_key: "nbk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# For per-host keys, define netbird_setup_key in host_vars/<name>/vault.yml instead.
 
 netbird_register: true                      # Register node on install (set false to install only)
 
