@@ -45,8 +45,8 @@
   notify: reboot system
 
 - name: Detect ZFS pool name from partition
-  ansible.builtin.shell:
-    cmd: "zdb -l {{ _partition_device }} | awk -F\\' '/^[[:space:]]+name:/{print $2; exit}'"
+  ansible.builtin.command:
+    cmd: "blkid -s LABEL -o value {{ _partition_device }}"
   register: _zfs_pool_result
   changed_when: false
   failed_when: false
