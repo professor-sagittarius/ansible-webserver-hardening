@@ -600,3 +600,14 @@ hpb_packages:                               # Packages to install for HPB stack
   - netcat-openbsd
   - python3
 
+
+# =============================================================================
+# uptime_kuma_hooks role (local)
+# =============================================================================
+# Optional role. Apply after running am-i-overreacting/uptime-kuma/provision_monitors.py.
+# Use uptime-kuma-hooks-playbook.yml (main server) or uptime-kuma-hooks-hpb-playbook.yml (HPB).
+
+uptime_kuma_unattended_upgrades_push_url: ""  # Push URL for unattended-upgrades APT hook
+uptime_kuma_reboot_push_url: ""               # Push URL for hourly reboot-required check
+uptime_kuma_disk_push_url: ""                 # Push URL for hourly disk space check
+uptime_kuma_disk_threshold_percent: 80        # Alert threshold (percent used)

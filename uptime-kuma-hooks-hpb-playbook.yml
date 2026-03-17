@@ -1,0 +1,16 @@
+---
+# Apply Uptime Kuma push notification hooks to the half-price-books server.
+#
+# Before running: execute am-i-overreacting/uptime-kuma/provision_monitors.py
+# and paste the "HPB server" block from its output into the vars section below.
+#
+- hosts: all
+  become: true
+  roles:
+    - uptime_kuma_hooks
+  vars:
+    # Paste output from provision_monitors.py here:
+    uptime_kuma_unattended_upgrades_push_url: "change-me"
+    uptime_kuma_reboot_push_url: "change-me"
+    uptime_kuma_disk_push_url: "change-me"
+    uptime_kuma_disk_threshold_percent: 80
