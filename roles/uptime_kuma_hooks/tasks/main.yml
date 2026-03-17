@@ -1,0 +1,43 @@
+---
+- name: Install APT hook for unattended-upgrades push notification
+  ansible.builtin.template:
+    src: apt-hook.j2
+    dest: /etc/apt/apt.conf.d/99uptime-kuma-hook
+    owner: root
+    group: root
+    mode: "0644"
+  when: uptime_kuma_unattended_upgrades_push_url != ""
+
+- name: Install reboot-required check script
+  ansible.builtin.template:
+    src: reboot-check.sh.j2
+    dest: /usr/local/bin/uptime-kuma-reboot-check
+    owner: root
+    group: root
+    mode: "0755"
+  when: uptime_kuma_reboot_push_url != ""
+
+- name: Install reboot-required cron job
+  ansible.builtin.cron:
+    name: "uptime-kuma reboot check"
+    minute: "0"
+    job: /usr/local/bin/uptime-kuma-reboot-check
+    user: root
+  when: uptime_kuma_reboot_push_url != ""
+
+- name: Install disk space check script
+  ansible.builtin.template:
+    src: disk-check.sh.j2
+    dest: /usr/local/bin/uptime-kuma-disk-check
+    owner: root
+    group: root
+    mode: "0755"
+  when: uptime_kuma_disk_push_url != ""
+
+- name: Install disk space cron job
+  ansible.builtin.cron:
+    name: "uptime-kuma disk check"
+    minute: "30"
+    job: /usr/local/bin/uptime-kuma-disk-check
+    user: root
+  when: uptime_kuma_disk_push_url != ""

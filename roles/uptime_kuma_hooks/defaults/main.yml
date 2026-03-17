@@ -1,0 +1,10 @@
+---
+# Push URLs for Uptime Kuma monitors. Set these from the output of
+# am-i-overreacting/uptime-kuma/provision_monitors.py.
+# Tasks are skipped entirely when a URL is empty.
+uptime_kuma_unattended_upgrades_push_url: ""
+uptime_kuma_reboot_push_url: ""
+uptime_kuma_disk_push_url: ""
+
+# Alert when any filesystem exceeds this percentage.
+uptime_kuma_disk_threshold_percent: 80
