@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PUSH_URL="{{ uptime_kuma_reboot_push_url }}"
+
+if [ -f /var/run/reboot-required ]; then
+    curl -fsS "${PUSH_URL}?status=down&msg=Reboot+required" > /dev/null
+else
+    curl -fsS "${PUSH_URL}?status=up" > /dev/null
+fi

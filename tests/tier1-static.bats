@@ -28,3 +28,30 @@ setup() {
     run grep -q "DPkg::Post-Invoke" "$ROLE_ROOT/templates/apt-hook.j2"
     assert_success
 }
+
+# -- reboot-check.sh.j2 --------------------------------------------------------
+
+@test "reboot-check.sh.j2: exists" {
+    [[ -f "$ROLE_ROOT/templates/reboot-check.sh.j2" ]]
+}
+
+@test "reboot-check.sh.j2: references the push URL variable" {
+    run grep -q "uptime_kuma_reboot_push_url" \
+        "$ROLE_ROOT/templates/reboot-check.sh.j2"
+    assert_success
+}
+
+@test "reboot-check.sh.j2: checks /var/run/reboot-required" {
+    run grep -q "reboot-required" "$ROLE_ROOT/templates/reboot-check.sh.j2"
+    assert_success
+}
+
+@test "reboot-check.sh.j2: sends status=down when reboot needed" {
+    run grep -q "status=down" "$ROLE_ROOT/templates/reboot-check.sh.j2"
+    assert_success
+}
+
+@test "reboot-check.sh.j2: sends status=up when no reboot needed" {
+    run grep -q "status=up" "$ROLE_ROOT/templates/reboot-check.sh.j2"
+    assert_success
+}
