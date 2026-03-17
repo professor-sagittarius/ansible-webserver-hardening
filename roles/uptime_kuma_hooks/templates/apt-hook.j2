@@ -1,0 +1,1 @@
+DPkg::Post-Invoke {"curl -fsS '{{ uptime_kuma_unattended_upgrades_push_url }}' > /dev/null 2>&1 || true";};
