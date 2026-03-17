@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PUSH_URL="{{ uptime_kuma_disk_push_url }}"
+THRESHOLD={{ uptime_kuma_disk_threshold_percent }}
+
+# Check all real filesystems; alert if any exceeds the threshold.
+OVER_THRESHOLD=$(df --output=pcent,target -x tmpfs -x devtmpfs -x squashfs \
+    | tail -n +2 \
+    | awk -v t="$THRESHOLD" '{gsub(/%/,"",$1); if ($1 > t) print $2}')
+
+if [ -n "$OVER_THRESHOLD" ]; then
+    MSG=$(echo "$OVER_THRESHOLD" | head -1 | sed 's|/|disk |g' | xargs echo "Disk full:")
+    curl -fsS "${PUSH_URL}?status=down&msg=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$MSG")" > /dev/null
+else
+    curl -fsS "${PUSH_URL}?status=up" > /dev/null
+fi

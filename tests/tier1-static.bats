@@ -55,3 +55,31 @@ setup() {
     run grep -q "status=up" "$ROLE_ROOT/templates/reboot-check.sh.j2"
     assert_success
 }
+
+# -- disk-check.sh.j2 ----------------------------------------------------------
+
+@test "disk-check.sh.j2: exists" {
+    [[ -f "$ROLE_ROOT/templates/disk-check.sh.j2" ]]
+}
+
+@test "disk-check.sh.j2: references the push URL variable" {
+    run grep -q "uptime_kuma_disk_push_url" \
+        "$ROLE_ROOT/templates/disk-check.sh.j2"
+    assert_success
+}
+
+@test "disk-check.sh.j2: references the threshold variable" {
+    run grep -q "uptime_kuma_disk_threshold_percent" \
+        "$ROLE_ROOT/templates/disk-check.sh.j2"
+    assert_success
+}
+
+@test "disk-check.sh.j2: sends status=down on high usage" {
+    run grep -q "status=down" "$ROLE_ROOT/templates/disk-check.sh.j2"
+    assert_success
+}
+
+@test "disk-check.sh.j2: sends status=up on normal usage" {
+    run grep -q "status=up" "$ROLE_ROOT/templates/disk-check.sh.j2"
+    assert_success
+}
